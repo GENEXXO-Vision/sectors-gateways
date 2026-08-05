@@ -110,8 +110,22 @@
   #frame.drawer-open #scrim{opacity:1;pointer-events:auto}
   #drawer{position:absolute;left:0;bottom:0;top:94px;width:76%;max-width:322px;background:#fff;transform:translateX(-102%);transition:transform .3s cubic-bezier(.4,0,.2,1);z-index:61;box-shadow:10px 0 44px rgba(0,0,0,.22);display:flex;flex-direction:column;overflow:hidden}
   #frame.drawer-open #drawer{transform:none}
-  #drawerHead,#drawerRHead{display:flex;align-items:center;gap:8px;padding:14px 18px 11px;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line)}
+  #drawerHead,#drawerRHead{display:flex;align-items:center;gap:8px;padding:11px 14px;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line)}
+  #drawerHead svg,#drawerRHead svg{flex-shrink:0}
+  #drawerHead input,#drawerRHead input{flex:1;min-width:0;border:none;outline:none;background:transparent;font-family:var(--font);font-size:13.5px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--ink)}
+  #drawerHead input::placeholder,#drawerRHead input::placeholder{color:rgba(17,17,22,.4);font-weight:600}
   #drawerList,#drawerRList{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 0}
+  /* sticky sub-group dividers, each preceded by a static 0-height jump anchor (stable offsetTop) */
+  .gwanchor{height:0;overflow:hidden}
+  .gwsec{position:sticky;top:0;z-index:3;background:#fff;padding:9px 18px 6px;font-size:9.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line)}
+  /* "Jump ▾" control in the gateway drawer header + its popover */
+  #gwJumpBtn,#secJumpBtn{display:none;align-items:center;gap:4px;flex-shrink:0;border:none;background:transparent;font-family:var(--font);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);cursor:pointer;padding:4px 0 4px 8px}
+  .gwjump{position:absolute;top:50px;left:12px;right:12px;max-height:62%;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.22);z-index:70;padding:6px}
+  .gwjump[hidden]{display:none}
+  .gwjump-h{padding:8px 12px 6px;font-size:9.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+  .gwjump-item{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:12.5px;font-weight:700;color:var(--ink)}
+  .gwjump-item:active,.gwjump-item:hover{background:var(--bg)}
+  .gwjump-item span{font-size:11px;font-weight:800;color:var(--muted);flex-shrink:0}
   .drow{display:flex;align-items:center;gap:12px;padding:11px 18px;cursor:pointer}
   .drow:active,.drow:hover{background:var(--bg)}
   .drow .dic{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#fff;flex-shrink:0}
@@ -233,6 +247,18 @@
   .chips{display:flex;gap:7px;overflow-x:auto;padding:10px 16px 4px}
   .chip{font-size:11.5px;font-weight:700;padding:7px 13px;border-radius:99px;background:#fff;border:1px solid var(--line);white-space:nowrap;cursor:pointer;color:var(--muted)}
   .chip.on{background:#111116;color:#fff;border-color:#111116}
+  /* discover — sector cards (resting/browse view) */
+  .secgrouphd{font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);padding:15px 18px 5px}
+  .seccards{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:2px 16px 4px}
+  .seccard{background:#fff;border:1px solid var(--line);border-radius:15px;padding:12px 9px 11px;text-align:center;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease}
+  .seccard:active{transform:scale(.97)}
+  .seccard .ic{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 8px;color:#fff}
+  .seccard .nm{font-size:12px;font-weight:800;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .seccard .mt{font-size:9px;font-weight:700;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .seccard.live .mt{color:#16A34A}
+  .discback{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:800;color:var(--muted);margin:8px 16px 0;padding:5px 0;cursor:pointer}
+  .dischead{display:flex;align-items:center;gap:11px;padding:6px 16px 8px}
+  .dischead .ic{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;flex-shrink:0}
 
   /* network feed */
   .nfcard{background:#fff;border:1px solid var(--line);border-radius:18px;margin:0 16px 12px;overflow:hidden}
@@ -397,61 +423,117 @@
   <div id="edge" onclick="openDrawer()" aria-label="Open sectors"></div>
   <div id="scrim" onclick="closeDrawer()"></div>
   <aside id="drawer">
-    <div id="drawerHead">Sectors</div>
-    <div id="drawerList"></div>
+    <div id="drawerHead">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(17,17,22,.4)" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="secSearch" placeholder="Search sectors…" autocomplete="off" oninput="onSecSearch(this.value)">
+      <button id="secJumpBtn" onclick="toggleSecJump(event)" aria-label="Jump to section">Jump ▾</button>
+    </div>
+    <div id="secJump" class="gwjump" hidden></div>
+    <div id="drawerList" onclick="var p=document.getElementById('secJump');if(p&&!p.hidden)p.hidden=true"></div>
   </aside>
   <div id="edgeR" onclick="openDrawerR()" aria-label="Open gateways"></div>
   <div id="scrimR" onclick="closeDrawerR()"></div>
   <aside id="drawerR">
-    <div id="drawerRHead"></div>
-    <div id="drawerRList"></div>
+    <div id="drawerRHead">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(17,17,22,.4)" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="gwSearch" placeholder="Search gateways…" autocomplete="off" oninput="onGwSearch(this.value)">
+      <button id="gwJumpBtn" onclick="toggleGwJump(event)" aria-label="Jump to section">Jump ▾</button>
+    </div>
+    <div id="gwJump" class="gwjump" hidden></div>
+    <div id="drawerRList" onclick="var p=document.getElementById('gwJump');if(p&&!p.hidden)p.hidden=true"></div>
   </aside>
 </div>
 
 <script>
 /* ═════════ DATA — extracted from desktop V1 (genexxo-deck copy.html) ═════════ */
 
+/* Master tile list — source of truth: sectors--list.xlsx (2026-08-05), grouped into
+   three sub-sections (Utility/Holding intentionally deferred). `group` drives the
+   sticky sub-section dividers in the sector drawer. Keys are preserved from the old
+   list wherever a tile maps to an existing sector so gateway wiring + live builds
+   survive; renamed tiles keep their key (e.g. career→"Careers", tourism→"Travel"). */
+const SECTOR_GROUPS = [
+  {key:'consumer',   label:'Consumer'},
+  {key:'b2b',        label:'Business & Professional'},
+  {key:'industrial', label:'Industrial & Resources'},
+];
 const SECTORS = [
-  {key:'adventure',name:'Adventure',icon:'⚡',tag:'Sports & Adventure',g:'linear-gradient(135deg,#E85D3A,#FF8C42)'},
-  {key:'fashion',name:'Fashion',icon:'✦',tag:'Style & Editorial',g:'linear-gradient(135deg,#1a1a2e,#333)'},
-  {key:'wellness',name:'Wellness',icon:'🧘',tag:'Mind & Body',g:'linear-gradient(135deg,#0D5C63,#1A8A7A)'},
-  {key:'finance',name:'Finance',icon:'📊',tag:'Markets & Intelligence',g:'linear-gradient(135deg,#0F172A,#1E3A5F)'},
-  {key:'education',name:'Education',icon:'🎓',tag:'Learning & Development',g:'linear-gradient(135deg,#1D4ED8,#60A5FA)'},
-  {key:'career',name:'Professions',icon:'💼',tag:'Professional & Growth',g:'linear-gradient(135deg,#1E40AF,#3B82F6)'},
-  {key:'beauty',name:'Beauty',icon:'💄',tag:'Skincare & Cosmetics',g:'linear-gradient(135deg,#DB2777,#F472B6)'},
-  {key:'consumer',name:'Consumer',icon:'🛒',tag:'Shopping & Deals',g:'linear-gradient(135deg,#0EA5E9,#38BDF8)'},
-  {key:'business',name:'Business',icon:'🏢',tag:'Enterprise & Strategy',g:'linear-gradient(135deg,#334155,#64748B)'},
-  {key:'chemical',name:'Chemical',icon:'🧪',tag:'Compounds & Processing',g:'linear-gradient(135deg,#0891B2,#06B6D4)'},
-  {key:'language',name:'Languages',icon:'🗣️',tag:'Global Languages',g:'linear-gradient(135deg,#3730A3,#A5B4FC)'},
-  {key:'health',name:'Health',icon:'💊',tag:'Conditions & Science',g:'linear-gradient(135deg,#0891B2,#67E8F9)'},
-  {key:'hobby',name:'Hobby',icon:'🎵',tag:'Passions & Pastimes',g:'linear-gradient(135deg,#B45309,#D97706)'},
-  {key:'travel',name:'Destinations',icon:'✈️',tag:'Destinations & Adventure',g:'linear-gradient(135deg,#0EA5E9,#38BDF8)'},
-  {key:'sports',name:'Sports',icon:'⚽',tag:'Team Sports & Fans',g:'linear-gradient(135deg,#15803D,#22C55E)'},
-  {key:'gift',name:'Gift',icon:'🎁',tag:'Giving & Celebration',g:'linear-gradient(135deg,#E11D48,#F43F5E)'},
-  {key:'food',name:'Food & Beverage',icon:'🍝',tag:'Cuisine & Culture',g:'linear-gradient(135deg,#16A34A,#4ADE80)'},
-  {key:'living',name:'Home & Garden',icon:'🏡',tag:'Home & Interiors',g:'linear-gradient(135deg,#78716C,#A8A29E)'},
-  {key:'parenting',name:'Parenting',icon:'👶',tag:'Family & Childcare',g:'linear-gradient(135deg,#2563EB,#60A5FA)'},
-  {key:'pet',name:'Pets & Animals',icon:'🐾',tag:'Animals & Care',g:'linear-gradient(135deg,#92400E,#D97706)'},
-  {key:'leisure',name:'Leisure',icon:'🍾',tag:'Social & Entertainment',g:'linear-gradient(135deg,#B45309,#F59E0B)'},
-  {key:'tourism',name:'Travel & Tourism',icon:'🏖️',tag:'Holidays & Getaways',g:'linear-gradient(135deg,#0891B2,#22D3EE)'},
-  {key:'culture',name:'Life & Culture',icon:'🌍',tag:'Identity & Heritage',g:'linear-gradient(135deg,#9333EA,#C084FC)'},
-  {key:'media',name:'Media',icon:'🎥',tag:'Content & Broadcast',g:'linear-gradient(135deg,#7C3AED,#A78BFA)'},
-  {key:'gaming',name:'Gaming',icon:'🎰',tag:'Play & Strategy',g:'linear-gradient(135deg,#15803D,#14532D)'},
-  {key:'realestate',name:'Real Estate',icon:'🏢',tag:'Property & Development',g:'linear-gradient(135deg,#0D9488,#2DD4BF)'},
-  {key:'tech',name:'Technology',icon:'💻',tag:'Innovation & AI',g:'linear-gradient(135deg,#7C3AED,#A78BFA)'},
-  {key:'law',name:'Legal & Law',icon:'⚖️',tag:'Legal & Justice',g:'linear-gradient(135deg,#1E3A5F,#334155)'},
-  {key:'spirituality',name:'Spirituality',icon:'✨',tag:'Faith & Consciousness',g:'linear-gradient(135deg,#6D28D9,#8B5CF6)'},
-  {key:'environment',name:'Environment',icon:'🌍',tag:'Planet & Sustainability',g:'linear-gradient(135deg,#15803D,#16A34A)'},
-  {key:'issues',name:'Global Issues',icon:'📢',tag:'Society & Policy',g:'linear-gradient(135deg,#DC2626,#F87171)'},
-  {key:'nonprofit',name:'Nonprofit',icon:'💚',tag:'Charity & Giving',g:'linear-gradient(135deg,#15803D,#4ADE80)'},
-  {key:'automotive',name:'Automotive',icon:'🏎️',tag:'Vehicles & Motorsport',g:'linear-gradient(135deg,#DC2626,#991B1B)'},
-  {key:'transportation',name:'Transport & Logistics',icon:'🚛',tag:'Freight & Supply Chain',g:'linear-gradient(135deg,#1E40AF,#3B82F6)'},
-  {key:'aerospace',name:'Aerospace & Defense',icon:'🚀',tag:'Space & Military',g:'linear-gradient(135deg,#1E3A5F,#3B82F6)'},
-  {key:'construction',name:'Construction',icon:'🏗️',tag:'Building & Infrastructure',g:'linear-gradient(135deg,#92400E,#F59E0B)'},
-  {key:'energy',name:'Energy & Power',icon:'🔋',tag:'Power & Sustainability',g:'linear-gradient(135deg,#CA8A04,#FACC15)'},
-  {key:'agriculture',name:'Agriculture',icon:'🌾',tag:'Farming & Production',g:'linear-gradient(135deg,#166534,#4ADE80)'},
-  {key:'industrial',name:'Industrial',icon:'🏭',tag:'Manufacturing & Machinery',g:'linear-gradient(135deg,#475569,#94A3B8)'},
-  {key:'materials',name:'Materials',icon:'🪨',tag:'Metals & Resources',g:'linear-gradient(135deg,#78716C,#A8A29E)'},
+  // ── B2C — Consumer ──────────────────────────────────────────────────────────
+  {key:'sports',name:'Sports',icon:'⚽',tag:'Team Sports & Fans',g:'linear-gradient(135deg,#15803D,#22C55E)',group:'consumer'},
+  {key:'adventure',name:'Adventure',icon:'⚡',tag:'Sports & Adventure',g:'linear-gradient(135deg,#E85D3A,#FF8C42)',group:'consumer'},
+  {key:'watersports',name:'Watersports',icon:'🌊',tag:'Ocean & Waves',g:'linear-gradient(135deg,#0369A1,#0EA5E9)',group:'consumer'},
+  {key:'wintersports',name:'Wintersports',icon:'🎿',tag:'Snow & Slopes',g:'linear-gradient(135deg,#0E7490,#67E8F9)',group:'consumer'},
+  {key:'cycling',name:'Cycling',icon:'🚴',tag:'Road & Trail',g:'linear-gradient(135deg,#CA8A04,#FDE047)',group:'consumer'},
+  {key:'fitness',name:'Fitness',icon:'🏋️',tag:'Training & Movement',g:'linear-gradient(135deg,#B91C1C,#EF4444)',group:'consumer'},
+  {key:'fashion',name:'Fashion',icon:'✦',tag:'Style & Editorial',g:'linear-gradient(135deg,#1a1a2e,#333)',group:'consumer'},
+  {key:'accessories',name:'Accessories',icon:'👜',tag:'Bags & Extras',g:'linear-gradient(135deg,#7C2D12,#B45309)',group:'consumer'},
+  {key:'jewellery',name:'Jewellery',icon:'💎',tag:'Fine & Fashion',g:'linear-gradient(135deg,#831843,#DB2777)',group:'consumer'},
+  {key:'beauty',name:'Beauty',icon:'💄',tag:'Skincare & Cosmetics',g:'linear-gradient(135deg,#DB2777,#F472B6)',group:'consumer'},
+  {key:'health',name:'Health',icon:'💊',tag:'Conditions & Science',g:'linear-gradient(135deg,#0891B2,#67E8F9)',group:'consumer'},
+  {key:'dental',name:'Dental',icon:'🦷',tag:'Teeth & Care',g:'linear-gradient(135deg,#0E7490,#22D3EE)',group:'consumer'},
+  {key:'vision',name:'Vision',icon:'👁️',tag:'Eyes & Eyewear',g:'linear-gradient(135deg,#1E40AF,#818CF8)',group:'consumer'},
+  {key:'wellness',name:'Wellness',icon:'🧘',tag:'Mind & Body',g:'linear-gradient(135deg,#0D5C63,#1A8A7A)',group:'consumer'},
+  {key:'mind',name:'Mind',icon:'🧠',tag:'Psychology & Focus',g:'linear-gradient(135deg,#6D28D9,#A78BFA)',group:'consumer'},
+  {key:'nutrition',name:'Nutrition',icon:'🥗',tag:'Diet & Fuel',g:'linear-gradient(135deg,#166534,#84CC16)',group:'consumer'},
+  {key:'spirituality',name:'Spirituality',icon:'✨',tag:'Faith & Consciousness',g:'linear-gradient(135deg,#6D28D9,#8B5CF6)',group:'consumer'},
+  {key:'food',name:'Food',icon:'🍝',tag:'Cuisine & Culture',g:'linear-gradient(135deg,#16A34A,#4ADE80)',group:'consumer'},
+  {key:'drinks',name:'Drinks',icon:'🍷',tag:'Beverages & Bars',g:'linear-gradient(135deg,#7F1D1D,#DC2626)',group:'consumer'},
+  {key:'pet',name:'Pets',icon:'🐾',tag:'Animals & Care',g:'linear-gradient(135deg,#92400E,#D97706)',group:'consumer'},
+  {key:'living',name:'Home',icon:'🏡',tag:'Home & Interiors',g:'linear-gradient(135deg,#78716C,#A8A29E)',group:'consumer'},
+  {key:'garden',name:'Garden',icon:'🌱',tag:'Plants & Outdoors',g:'linear-gradient(135deg,#15803D,#65A30D)',group:'consumer'},
+  {key:'gift',name:'Gift',icon:'🎁',tag:'Giving & Celebration',g:'linear-gradient(135deg,#E11D48,#F43F5E)',group:'consumer'},
+  {key:'weddings',name:'Weddings',icon:'💍',tag:'Ceremony & Celebration',g:'linear-gradient(135deg,#9D174D,#F472B6)',group:'consumer'},
+  {key:'flowers',name:'Flowers',icon:'🌸',tag:'Blooms & Florists',g:'linear-gradient(135deg,#BE185D,#FB7185)',group:'consumer'},
+  {key:'toys',name:'Toys',icon:'🧸',tag:'Play & Kids',g:'linear-gradient(135deg,#B45309,#FBBF24)',group:'consumer'},
+  {key:'parenting',name:'Parenting',icon:'👶',tag:'Family & Childcare',g:'linear-gradient(135deg,#2563EB,#60A5FA)',group:'consumer'},
+  {key:'family',name:'Family',icon:'👪',tag:'Households & Bonds',g:'linear-gradient(135deg,#1D4ED8,#93C5FD)',group:'consumer'},
+  {key:'dating',name:'Dating',icon:'❤️',tag:'Relationships & Match',g:'linear-gradient(135deg,#BE123C,#FB7185)',group:'consumer'},
+  {key:'tourism',name:'Travel',icon:'🏖️',tag:'Holidays & Getaways',g:'linear-gradient(135deg,#0891B2,#22D3EE)',group:'consumer'},
+  {key:'travel',name:'Destinations',icon:'✈️',tag:'Destinations & Adventure',g:'linear-gradient(135deg,#0EA5E9,#38BDF8)',group:'consumer'},
+  {key:'automotive',name:'Cars',icon:'🏎️',tag:'Vehicles & Motorsport',g:'linear-gradient(135deg,#DC2626,#991B1B)',group:'consumer'},
+  {key:'boating',name:'Boating',icon:'⛵',tag:'Sail & Marine',g:'linear-gradient(135deg,#0C4A6E,#0EA5E9)',group:'consumer'},
+  {key:'aviation',name:'Aviation',icon:'🛩️',tag:'Flight & Aircraft',g:'linear-gradient(135deg,#1E3A8A,#60A5FA)',group:'consumer'},
+  {key:'transit',name:'Transit',icon:'🚆',tag:'Transit & Mobility',g:'linear-gradient(135deg,#334155,#64748B)',group:'consumer'},
+  {key:'media',name:'Media',icon:'🎥',tag:'Content & Broadcast',g:'linear-gradient(135deg,#7C3AED,#A78BFA)',group:'consumer'},
+  {key:'music',name:'Music',icon:'🎶',tag:'Sound & Artists',g:'linear-gradient(135deg,#7C3AED,#C084FC)',group:'consumer'},
+  {key:'film',name:'Film',icon:'🎬',tag:'Cinema & Screen',g:'linear-gradient(135deg,#1F2937,#6B7280)',group:'consumer'},
+  {key:'gaming',name:'Gaming',icon:'🎰',tag:'Play & Strategy',g:'linear-gradient(135deg,#15803D,#14532D)',group:'consumer'},
+  {key:'art',name:'Art',icon:'🎨',tag:'Fine Art & Design',g:'linear-gradient(135deg,#9333EA,#F0ABFC)',group:'consumer'},
+  {key:'books',name:'Books',icon:'📚',tag:'Reading & Authors',g:'linear-gradient(135deg,#7C2D12,#D97706)',group:'consumer'},
+  {key:'stage',name:'Stage',icon:'🎭',tag:'Theatre & Live',g:'linear-gradient(135deg,#9F1239,#FB7185)',group:'consumer'},
+  {key:'hobby',name:'Hobbies',icon:'🎵',tag:'Passions & Pastimes',g:'linear-gradient(135deg,#B45309,#D97706)',group:'consumer'},
+  {key:'language',name:'Languages',icon:'🗣️',tag:'Global Languages',g:'linear-gradient(135deg,#3730A3,#A5B4FC)',group:'consumer'},
+  {key:'culture',name:'Cultures',icon:'🌍',tag:'Identity & Heritage',g:'linear-gradient(135deg,#9333EA,#C084FC)',group:'consumer'},
+  {key:'religion',name:'Religion',icon:'🕊️',tag:'Faith & Worship',g:'linear-gradient(135deg,#4338CA,#818CF8)',group:'consumer'},
+  {key:'identity',name:'Identity',icon:'🪪',tag:'Self & Community',g:'linear-gradient(135deg,#7C3AED,#A78BFA)',group:'consumer'},
+  {key:'education',name:'Education',icon:'🎓',tag:'Learning & Development',g:'linear-gradient(135deg,#1D4ED8,#60A5FA)',group:'consumer'},
+  {key:'science',name:'Science',icon:'🔬',tag:'Research & Discovery',g:'linear-gradient(135deg,#0F766E,#2DD4BF)',group:'consumer'},
+  {key:'tech',name:'Tech',icon:'💻',tag:'Innovation & AI',g:'linear-gradient(135deg,#7C3AED,#A78BFA)',group:'consumer'},
+  {key:'ai',name:'AI',icon:'🤖',tag:'Machine Intelligence',g:'linear-gradient(135deg,#4338CA,#22D3EE)',group:'consumer'},
+  {key:'security',name:'Security',icon:'🛡️',tag:'Safety & Defence',g:'linear-gradient(135deg,#1E293B,#475569)',group:'consumer'},
+  {key:'finance',name:'Finance',icon:'📊',tag:'Markets & Intelligence',g:'linear-gradient(135deg,#0F172A,#1E3A5F)',group:'consumer'},
+  {key:'crypto',name:'Crypto',icon:'🪙',tag:'Digital Assets',g:'linear-gradient(135deg,#B45309,#FBBF24)',group:'consumer'},
+  {key:'consumer',name:'Consumer',icon:'🛒',tag:'Shopping & Deals',g:'linear-gradient(135deg,#0EA5E9,#38BDF8)',group:'consumer'},
+  // ── B2B — Business & Professional ────────────────────────────────────────────
+  {key:'career',name:'Careers',icon:'💼',tag:'Professional & Growth',g:'linear-gradient(135deg,#1E40AF,#3B82F6)',group:'b2b'},
+  {key:'business',name:'Business',icon:'🏢',tag:'Enterprise & Strategy',g:'linear-gradient(135deg,#334155,#64748B)',group:'b2b'},
+  {key:'marketing',name:'Marketing',icon:'📣',tag:'Brand & Growth',g:'linear-gradient(135deg,#DB2777,#FB923C)',group:'b2b'},
+  {key:'retail',name:'Retail',icon:'🏬',tag:'Stores & Commerce',g:'linear-gradient(135deg,#0EA5E9,#7DD3FC)',group:'b2b'},
+  {key:'realestate',name:'Property',icon:'🏠',tag:'Property & Development',g:'linear-gradient(135deg,#0D9488,#2DD4BF)',group:'b2b'},
+  {key:'insurance',name:'Insurance',icon:'☂️',tag:'Cover & Risk',g:'linear-gradient(135deg,#1E40AF,#60A5FA)',group:'b2b'},
+  {key:'transportation',name:'Logistics',icon:'🚛',tag:'Freight & Supply Chain',g:'linear-gradient(135deg,#1E40AF,#3B82F6)',group:'b2b'},
+  {key:'law',name:'Law',icon:'⚖️',tag:'Legal & Justice',g:'linear-gradient(135deg,#1E3A5F,#334155)',group:'b2b'},
+  {key:'government',name:'Government',icon:'🏛️',tag:'Public & Policy',g:'linear-gradient(135deg,#334155,#94A3B8)',group:'b2b'},
+  {key:'aerospace',name:'Defense',icon:'🚀',tag:'Space & Military',g:'linear-gradient(135deg,#1E3A5F,#3B82F6)',group:'b2b'},
+  // ── Industrial & Resources ───────────────────────────────────────────────────
+  {key:'agriculture',name:'Agriculture',icon:'🌾',tag:'Farming & Production',g:'linear-gradient(135deg,#166534,#4ADE80)',group:'industrial'},
+  {key:'energy',name:'Energy',icon:'🔋',tag:'Power & Sustainability',g:'linear-gradient(135deg,#CA8A04,#FACC15)',group:'industrial'},
+  {key:'environment',name:'Environment',icon:'🌍',tag:'Planet & Sustainability',g:'linear-gradient(135deg,#15803D,#16A34A)',group:'industrial'},
+  {key:'nature',name:'Nature',icon:'🌲',tag:'Wildlife & Land',g:'linear-gradient(135deg,#14532D,#22C55E)',group:'industrial'},
+  {key:'construction',name:'Construction',icon:'🏗️',tag:'Building & Infrastructure',g:'linear-gradient(135deg,#92400E,#F59E0B)',group:'industrial'},
+  {key:'industrial',name:'Manufacturing',icon:'🏭',tag:'Manufacturing & Machinery',g:'linear-gradient(135deg,#475569,#94A3B8)',group:'industrial'},
+  {key:'materials',name:'Materials',icon:'🪨',tag:'Metals & Resources',g:'linear-gradient(135deg,#78716C,#A8A29E)',group:'industrial'},
+  {key:'chemical',name:'Chemical',icon:'🧪',tag:'Compounds & Processing',g:'linear-gradient(135deg,#0891B2,#06B6D4)',group:'industrial'},
 ];
 
 const SECTOR_GATEWAYS = {
@@ -463,19 +545,19 @@ const SECTOR_GATEWAYS = {
     '#Extreme & Aerial',
     'BallooningXX','BasejumpXX','BungeeXX','ExtremeXX','GlideXX','HangglidingXX','ParaglidingXX','SkydiveXX','SkydivingXX','SlacklineXX','WingsuitXX','WingwalkXX','ZiplineXX','ZorbXX',
     '#Winter & Mountain Adventure',
-    'SkitouringXX','SledXX','SnowbikingXX','SnowbladeXX','SnowboardXX','SnowkiteXX','SnowmobileXX','SnowmobilingXX','SnowshoeXX','SnowskateXX','SnowtubeXX','TobogganXX',
+    'SkitouringXX','SledXX','SnowbikingXX','SnowbladeXX','SnowboardXX','SnowkiteXX','SnowmobileXX','SnowshoeXX','SnowskateXX','SnowtubeXX','TobogganXX',
     '#Field Sports & Outdoors',
     'FishingXX','ForageXX','GeocacheXX','HorseridingXX','HuntXX','RodeoXX','ScoutXX','WildcraftingXX',
+    '#Hiking & Trekking',
+    'HikeXX','RambleXX','RuckingXX','RunningXX','TrailrunningXX','TrailXX','TrekXX','WalkXX',
+    '#Cycling & Wheels',
+    'BikepackingXX','CycleXX','FatbikeXX','GravelXX','HelibikeXX','MountainbikeXX','SkateXX',
     '#Climbing & Heights',
     'AbseilXX','CliffjumpXX','ClimbXX','HighliningXX','MountainXX','ViaferrataXX',
-    '#Cycling & Wheels',
-    'BikepackingXX','CycleXX','FatbikeXX','HelibikeXX','MountainbikeXX','SkateXX',
-    '#Hiking & Trekking',
-    'HikeXX','RambleXX','TrailXX','TrailrunningXX','TrekXX','WalkXX',
     '#Camping & Survival',
     'BushcraftXX','CampXX','GlampXX','PrepperXX',
     '#Caving & Canyoning',
-    'CanyoningXX','CaveXX','CoasteeringXX',
+    'CanyonXX','CaveXX','CoasteeringXX',
     '#Other Adventure',
     'ObstacleXX','OrienteerXX','PaintballXX',
   ],
@@ -483,7 +565,40 @@ const SECTOR_GATEWAYS = {
   finance:['StocksXX','CurrencyXX','CryptoXX','MortgageXX','PensionXX','LoanXX'],
   fashion:['GothXX','DenimXX','HandbagXX','SneakerXX','DressXX','LingerieXX'],
   education:['EnglishXX','HistoryXX','MathXX','MedicineXX','RoboticsXX','ScienceXX'],
-  career:['AccountantXX','ChefXX','DoctorXX','JournalistXX','LawyerXX','PlumberXX'],
+  career:[
+    '#Healthcare',
+    'AcupuncturistXX','AllergistXX','AnesthesiologistXX','AromatherapistXX','AudiologistXX','CardiologistXX','ChiropodistXX','ChiropractorXX','ClinicianXX','CounselorXX','CytologistXX','CytotechnologistXX','DentalhygienistXX','DentistXX','DermatologistXX','DiagnosticianXX','DietitianXX','DoctorXX','EndocrinologistXX','EndodontistXX','EpidemiologistXX','GeriatricianXX','GerontologistXX','GynecologistXX','HematologistXX','HerbalistXX','HistopathologistXX','HomeopathXX','HygienistXX','HypnotherapistXX','HypnotistXX','ImmunologistXX','ImplantologistXX','IntensivistXX','InternistXX','KinesiologistXX','MasseuseXX','MedicalcoderXX','MedicalscribeXX','MedicaltechnologistXX','MidwifeXX','NaturopathXX','NeonatologistXX','NephrologistXX','NeurologistXX','NeurosurgeonXX','NursepractitionerXX','NurseXX','NutritionistXX','ObstetricianXX','OccupationaltherapistXX','OncologistXX','OpthalmologistXX','OpticianXX','OptometristXX','OrthodontistXX','OrthoptistXX','OsteopathXX','PathologistXX','PediatricianXX','PeriodontistXX','PharmacistXX','PhlebotomistXX','PhysiatristXX','PhysicaltherapistXX','PhysicianassistantXX','PodiatristXX','ProsthodontistXX','PsychiatristXX','PsychologistXX','PsychotherapistXX','PulmonologistXX','RadiographerXX','RadiologistXX','RadiotherapistXX','ReflexologistXX','RegisterednurseXX','RespiratorytherapistXX','RheumatologistXX','SurgeonXX','TherapistXX','UrologistXX','VeterinarianXX',
+    '#Service & Hospitality',
+    'AestheticianXX','AttendantXX','AuctioneerXX','BabysitterXX','BakerXX','BarberXX','BaristaXX','BartenderXX','BeauticianXX','BellhopXX','BodyguardXX','BooksellerXX','BouncerXX','BrewerXX','ButcherXX','ButlerXX','CaretakerXX','CashierXX','CatsitterXX','CelebrantXX','ChauffeurXX','CheesemakerXX','ChefXX','ChocolatierXX','ConciergeXX','CosmetologistXX','CroupierXX','CustodianXX','DecluttererXX','DogsitterXX','DogtrainerXX','DogwalkerXX','DoorpersonXX','EmbalmerXX','FishmongerXX','GardenerXX','GroundskeeperXX','HairdresserXX','HostessXX','HotelierXX','HousekeeperXX','InspectorXX','InterpreterXX','InvestigatorXX','JanitorXX','KeycutterXX','LifecoachXX','MaidXX','ManicuristXX','MorticianXX','NotetakerXX','PedicuristXX','PetsitterXX','PickerXX','PorterXX','PresserXX','PublicanXX','RestaurateurXX','SecurityguardXX','SommelierXX','StylistXX','TaxidermistXX','TourguideXX','TranslatorXX','TraveladvisorXX','UndertakerXX','UsherXX','ValetXX','WaiterXX','WardenXX','WinemakerXX','ZookeeperXX',
+    '#Trades & Construction',
+    'AutoworkerXX','BlacksmithXX','BoatbuilderXX','BoilermakerXX','BookbinderXX','BricklayerXX','BrickmasonXX','BuilderXX','CarpenterXX','ChimneysweepXX','CobblerXX','ContractorXX','CraftworkerXX','DecoratorXX','DressmakerXX','DrillerXX','DrylinerXX','ElectricianXX','EngraverXX','FabricatorXX','FitterXX','FixerXX','ForepersonXX','FramerXX','GlassmakerXX','GlazierXX','GoldsmithXX','GunsmithXX','HandypersonXX','InstallerXX','IronworkerXX','JewelerXX','JoinerXX','LaborerXX','LandscaperXX','LocksmithXX','MachinistXX','MasonXX','MechanicXX','MillwrightXX','MinerXX','PainterXX','PipefitterXX','PipelayerXX','PlastererXX','PlatemakerXX','PlumberXX','RestorerXX','RiggerXX','RooferXX','ScaffolderXX','SeamstressXX','ShipbuilderXX','ShoemakerXX','ShopfitterXX','SignmakerXX','SignwriterXX','SilversmithXX','SoldererXX','StonemasonXX','TailorXX','TechnicianXX','ThatcherXX','TilerXX','ToolmakerXX','UpholstererXX','UpholsterXX','WatchmakerXX','WelderXX','WoodworkerXX',
+    '#Creative & Media',
+    'ActorXX','AnimatorXX','ArchitectXX','ArchivistXX','ArtdirectorXX','ArtistXX','AuthorXX','BranddesignerXX','CartoonistXX','CelloistXX','ChoreographerXX','CinematographerXX','ComedianXX','ComposerXX','ConductorXX','ContentcreatorXX','CopywriterXX','CreativedirectorXX','CriticXX','CuratorXX','DancerXX','DiscjockeyXX','EditorXX','EntertainerXX','FashiondesignerXX','FilmmakerXX','GamedesignerXX','GraphicdesignerXX','IllustratorXX','InteriordesignerXX','ModelerXX','ModelXX','MusicianXX','NarratorXX','NovelistXX','OrganistXX','PerformerXX','PerfumerXX','PhotographerXX','PianistXX','PoetXX','ProductdesignerXX','ProofreaderXX','RapperXX','ScreenwriterXX','ScribeXX','ScriptwriterXX','SculptorXX','SingerXX','SongwriterXX','SpeechwriterXX','StuntpersonXX','TechnicalwriterXX','UxdesignerXX','VideographerXX','VideoproducerXX','ViolinistXX','VisualdesignerXX','WriterXX',
+    '#Business & Admin',
+    'AccountmanagerXX','AdministratorXX','AdvisorXX','AnalystXX','AppraiserXX','AssessorXX','AssistantXX','BusinessanalystXX','CampaignmanagerXX','ClerkXX','ComplianceofficerXX','ConsultantXX','DigitalstrategistXX','DistributionmanagerXX','EstateagentXX','EstimatorXX','EvaluatorXX','ExecutiveassistantXX','FacilitatorXX','HeadhunterXX','HumanresourcesXX','InventorymanagerXX','LiaisonXX','LogisticianXX','ManagementconsultantXX','MarketerXX','MarketinganalystXX','MerchandiserXX','NegotiatorXX','OperationsanalystXX','OperationsmanagerXX','PlannerXX','ProcurementspecialistXX','ProductionmanagerXX','ProductmanagerXX','ProjectmanagerXX','PurchaserXX','RealtorXX','ReceptionistXX','RecruiterXX','SalespersonXX','SecretaryXX','StrategistXX','SurveyorXX','SustainabilitymanagerXX','TalentagentXX','ValuerXX','WarehousemanagerXX',
+    '#Science & Research',
+    'AnthropologistXX','ArchaeologistXX','AstronomerXX','AstrophysicistXX','BehavioristXX','BiochemistXX','BiologistXX','BotanistXX','CartographerXX','ChemistXX','ClimatologistXX','CriminologistXX','DemographerXX','EconomistXX','EntomologistXX','ErgonomistXX','EthicistXX','GemologistXX','GeneticistXX','GeographerXX','GeologistXX','HistorianXX','LexicographerXX','LinguistXX','LogicianXX','MathematicianXX','MeteorologistXX','MicrobiologistXX','MineralogistXX','MycologistXX','NeuroscientistXX','OceanographerXX','OrnithologistXX','PaleontologistXX','PetrologistXX','PharmacologistXX','PhoneticianXX','PhysicistXX','PhysiologistXX','ResearcherXX','ScientistXX','SociologistXX','StatisticianXX','ToxicologistXX','ZoologistXX',
+    '#Finance & Legal',
+    'AccountantXX','ActuaryXX','ArbitratorXX','AttorneyXX','AuditorXX','BailiffXX','BankerXX','BarristerXX','BookkeeperXX','BrokerXX','ControllerXX','ConveyancerXX','FinancialadvisorXX','FinancialanalystXX','FinancierXX','InsuranceagentXX','JudgeXX','LawyerXX','LitigatorXX','LoanofficerXX','MediatorXX','NotaryXX','ParalegalXX','ProsecutorXX','SolicitorXX','StenographerXX','StockbrokerXX','TaxaccountantXX','TellerXX','TreasurerXX','UnderwriterXX',
+    '#Technology',
+    'CloudengineerXX','CoderXX','CybersecurityanalystXX','DataanalystXX','DatabaseadministratorXX','DataengineerXX','DatascientistXX','DevelopersXX','DevopsengineerXX','MobiledeveloperXX','NetworkengineerXX','PlatformengineerXX','ProgrammerXX','PromptengineerXX','SecurityengineerXX','SoftwaredeveloperXX','SoftwareengineerXX','SolutionsarchitectXX','SystemsadministratorXX','SystemsanalystXX','TechnicalleadXX','TechnologistXX','TesterXX','WebdeveloperXX',
+    '#Education',
+    'AcademicadvisorXX','BursarXX','CurriculumdeveloperXX','DeanXX','EducatorXX','ElementaryteacherXX','ExaminerXX','HeadteacherXX','InstructionaldesignerXX','InstructorXX','LecturerXX','LibrarianXX','PrincipalXX','ProctorXX','ProfessorXX','RegistrarXX','SchoolcounselorXX','SecondaryteacherXX','TeacherXX','TutorXX',
+    '#Jobs, HR & Job-search',
+    'ApprenticeXX','AptitudeXX','CompetencyXX','FreelancerXX','InternXX','InterviewXX','JobsXX','MentorXX','RecruitmentXX','RedundancyXX','ResumeXX','SabbaticalXX','SalaryXX','SkillXX','TraineeXX','VocationXX',
+    '#Engineering',
+    'AerospaceengineerXX','BiomedicalengineerXX','ChemicalengineerXX','CivilengineerXX','ComputerengineerXX','DrafterXX','ElectricalengineerXX','EngineerXX','EnvironmentalengineerXX','IndustrialengineerXX','MechanicalengineerXX','ProcessengineerXX','RoboticistXX','StructuralengineerXX',
+    '#Sport, Fitness & Outdoor',
+    'AthleteXX','CheerleaderXX','CoachXX','CricketerXX','DiverXX','ExplorerXX','FishermanXX','FootballerXX','JockeyXX','ParachutistXX','PersonaltrainerXX','RefereeXX','UmpireXX',
+    '#Agriculture & Environment',
+    'AgronomistXX','ArboristXX','BeekeeperXX','ConservationistXX','EcologistXX','EnvironmentalistXX','FarmerXX','FarrierXX','ForesterXX','HorticulturistXX','RancherXX','RangerXX',
+    '#Transport & Logistics',
+    'CabincrewXX','DispatcherXX','DriverXX','HaulierXX','PilotXX','SailorXX','TeamsterXX','TruckerXX',
+    '#Care & Social',
+    'CaregiverXX','ChaplainXX','ChildminderXX','CompanionXX','NannyXX','SocialworkerXX',
+    '#Public Service, Military & Emergency',
+    'CoastguardXX','DetectiveXX','FirefighterXX','ParamedicXX','SergeantXX','SoldierXX',
+  ],
   health:['ArthritisXX','BloodXX','CholesterolXX','DiabetesXX','DrugXX','HealthXX'],
   hobby:['BakeXX','ChessXX','CraftXX','DanceXX','HobbyXX','MusicXX'],
   travel:['BeachXX','CruiseXX','FlightXX','HoneymoonXX','HotelXX','TravelXX'],
@@ -502,35 +617,60 @@ const SECTOR_GATEWAYS = {
   industrial:['AutomationXX','EngineXX','FactoryXX','GeneratorXX','MachineryXX','SemiconductorXX','ConveyorXX','ForkliftXX','BoilerXX','TransformerXX'],
   materials:['MaterialXX','SteelXX','AluminumXX','CopperXX','CompositeXX','TextileXX','RubberXX','GlassXX','GoldXX','PaperXX'],
   chemical:['AdditiveXX','ChemicalXX','DyeXX','FertilizerXX','PharmaceuticalXX','PlasticXX','AdhesiveXX','SolventXX','HydrogenXX','AmmoniaXX'],
-  beauty:['BeautyXX','SkinXX','ShaveXX','CosmeticsXX','NailsXX','PerfumeXX','LipstickXX','TattooXX','KbeautyXX'],
+  beauty:[
+    '#Cosmetic & Aesthetic Procedures',
+    'AestheticsXX','BlephXX','BoobjobXX','BreastliftXX','BrowliftXX','ButtliftXX','CarboxytherapyXX','DermaplaneXX','FaceliftXX','FatfreezingXX','HairremovalXX','InjectablesXX','LiposuctionXX','MesotherapyXX','MicrobladingXX','MicrocurrentXX','MicrodermabrasionXX','MicroneedlingXX','NosejobXX','PeelXX','PlasticsurgeryXX','SugaringXX','ThreadingXX','TighteningXX','TummytuckXX','UltherapyXX','WaxingXX',
+    '#Makeup & Color Cosmetics',
+    'BrowXX','LashXX','LipstickXX','MakeupXX',
+    '#Fragrance & Perfume',
+    'AttarXX','ColognesXX','FragrancesXX','OudXX','PerfumeXX',
+    '#Men\'s Grooming & Shaving',
+    'BeardXX','GroomingXX','RazorXX','ShaveXX',
+    '#Haircare & Styling',
+    'HaircareXX','HairlossXX','WigXX',
+    '#Tattoo, Piercing & Body Art',
+    'HennaXX','MehndiXX','PiercingXX','TattooXX',
+    '#Beauty Trends & Movements',
+    'CbeautyXX','CleanbeautyXX','JbeautyXX','KbeautyXX',
+    '#Body Care & Toiletries',
+    'BodycareXX','SoapXX',
+    '#Tanning & Sun Care',
+    'SunscreenXX','TanXX',
+    '#Salons, Spas & Services',
+    'MedspaXX','SalonXX',
+    '#Skincare & Facial Care',
+    'SkinXX',
+    '#Nail Care',
+    'NailsXX',
+  ],
   gift:['GiftXX','ArtXX','FlowersXX','WeddingXX','BirthdayXX','HamperXX','CandyXX','CandleXX','JewelryXX','ToyXX'],
   // ── Sports — new taxonomy (Sports.md). Ski & Sail (live builds from Adventure) live here now (sector flipped to sports).
   //    '#'-prefixed entries are sub-group HEADERS — rendered as dividers in the gateway lists, not gateways.
   sports:[
     '#Combat & Strength',
-    'BoxingXX','CapoeiraXX','ChambaraXX','FencingXX','GrapplingXX','JiujitsuXX','JudoXX','KarateXX','KendoXX','KickboxingXX','KravmagaXX','KungfuXX','MartialartsXX','MuaythaiXX','NinjaXX','SilatXX','SumoXX','TaekwondoXX','WrestlingXX',
-    '#Ball & Court Sports',
-    'BasketballXX','BeachvolleyballXX','BoomerangXX','DiscXX','DiscsportsXX','DodgeballXX','FloorballXX','FootnetXX','FrisbeeXX','HandballXX','KorfballXX','NetballXX','RoundnetXX','SepaktakrawXX','SlamballXX','StreetballXX','VolleyballXX','WaterpoloXX',
+    'BoxingXX','CapoeiraXX','ChambaraXX','FencingXX','GrapplingXX','JiujitsuXX','JudoXX','KarateXX','KendoXX','KickboxingXX','KravmagaXX','KungfuXX','MartialartsXX','MuaythaiXX','NinjaXX','SelfdefenseXX','SilatXX','SumoXX','TaekwondoXX','WrestlingXX',
     '#Winter Sports',
-    'FigureskatingXX','BandyXX','BiathlonXX','BobsledXX','CurlingXX','DogsleddingXX','HeliskiXX','IcehockeyXX','IceskateXX','LugeXX','MonoskiXX','NordiccombinedXX','SkeletonXX','SkiXX','SkijumpXX','SkimoXX','SpeedskatingXX','WaterskiXX',
+    'BandyXX','BiathlonXX','BobsledXX','CurlingXX','DogsleddingXX','FigureskatingXX','HeliskiXX','IcehockeyXX','IceskateXX','LugeXX','MonoskiXX','NordiccombinedXX','SkeletonXX','SkijumpXX','SkimoXX','SkiXX','SpeedskatingXX','WaterskiXX',
+    '#Ball & Court Sports',
+    'BasketballXX','BeachvolleyballXX','BoomerangXX','DiscXX','DodgeballXX','FloorballXX','FootnetXX','FrisbeeXX','HandballXX','KorfballXX','NetballXX','RoundnetXX','SepaktakrawXX','SlamballXX','StreetballXX','VolleyballXX','WaterpoloXX',
     '#Bat, Stick & Field Sports',
     'BaseballXX','CamogieXX','CricketXX','FieldhockeyXX','HockeyXX','HurlingXX','KabaddiXX','LacrosseXX','PesapalloXX','PoloXX','RoundersXX','ShintyXX','SoftballXX',
     '#Racquet Sports',
     'BadmintonXX','FrontenisXX','JaialaiXX','PadelXX','PelotaXX','PickleballXX','RacketlonXX','RacketsXX','RacquetballXX','RealtennisXX','SquashXX','TabletennisXX','TennisXX',
     '#Football Codes',
-    'AmericanfootballXX','AussierulesXX','CanadianfootballXX','CollegefootballXX','FootballXX','FutsalXX','GaelicfootballXX','RugbyXX','RugbyleagueXX','SevensXX','SoccerXX',
+    'AmericanfootballXX','AussierulesXX','CanadianfootballXX','CollegefootballXX','FootballXX','FutsalXX','GaelicfootballXX','RugbyleagueXX','RugbyXX',
     '#Motorsports',
     'AutocrossXX','DriftingXX','KartXX','MotocrossXX','MotorsportsXX','RallyXX','SpeedwayXX',
     '#Target & Precision',
     'ArcheryXX','BoulesXX','BowlsXX','CroquetXX','DartsXX','PetanqueXX','TenpinXX',
-    '#Equestrian',
-    'DressageXX','EquestrianXX','EquineXX','EventingXX','ShowjumpingXX',
     '#Multi-sport & Endurance',
     'AquathlonXX','DuathlonXX','EnduranceXX','MarathonXX','TriathlonXX',
     '#Adaptive & Para Sports',
     'BlindfootballXX','BocciaXX','GoalballXX','ParasportsXX',
     '#Animal Racing',
     'CamelracingXX','GreyhoundracingXX','HorseracingXX','TrottingXX',
+    '#Equestrian',
+    'DressageXX','EquestrianXX','EventingXX','ShowjumpingXX',
     '#Cue Sports',
     'BilliardsXX','PoolXX','SnookerXX',
     '#Gymnastics & Freestyle',
@@ -557,7 +697,22 @@ const SECTOR_GATEWAYS = {
   consumer:['ClaimXX','CouponXX','DiscountXX','RentXX','SearchXX','SellXX','CustomerXX','SubscriptionXX','RewardXX','SurveyXX'],
   realestate:['RealestateXX','PropertyXX','ApartmentXX','HousingXX','OfficeXX','TimeshareXX','LandlordXX','ValuationXX','PlanningXX','InventoryXX'],
   language:['EnglishXX','SpanishXX','MandarinXX','ArabicXX','FrenchXX','PortugueseXX'],
+  fitness:[
+    '#Gym & Workouts',
+    'BootcampXX','GymXX','WorkoutXX',
+    '#Strength & Bodybuilding',
+    'BodybuildingXX','CalisthenicsXX','PowerliftingXX','StrengthXX','WeightliftingXX',
+    '#Cardio & Endurance',
+    'AerobicsXX','HiitXX','RunningXX',
+    '#Mind-Body & Flexibility',
+    'BarreXX','PilatesXX','QigongXX','TaichiXX','YogaXX',
+    '#Dance & Movement Fitness',
+    'DanceXX','PoledanceXX',
+  ],
 };
+
+/* search_tags per gateway (key = name minus XX, lowercased) — from Prototype Sector Lists.xlsx. Drives drawer search. */
+const GW_TAGS = {"kravmaga": "krav maga, self defense, israeli martial art", "ninja": "ninja warrior, ninjutsu, obstacle", "selfdefense": "self defense, krav maga, personal safety, self-protection", "bobsled": "bobsleigh, bobsledding, four-man bob", "iceskate": "ice skating, ice skate", "monoski": "mono skiing, sit-ski, adaptive skiing", "skijump": "ski jumping, ski jump", "skimo": "ski mountaineering, skimo racing", "ski": "skiing, alpine skiing, downhill, cross-country skiing", "waterski": "water skiing, waterskiing", "disc": "disc golf, ultimate, ultimate frisbee, flying disc, frisbee", "polo": "polo, horse polo, chukka (not water polo)", "americanfootball": "gridiron, NFL, american football, quarterback", "football": "soccer, association football, futbol, futbol, the beautiful game, premier league", "rugby": "sevens, rugby sevens, rugby union, rugby league, scrum", "kart": "karting, go-kart, go-karting, karts", "motorsports": "F1, Formula 1, Formula One, NASCAR, MotoGP, IndyCar, rally, grand prix, motor racing", "rally": "rally racing, rallying, WRC, rallycross", "endurance": "endurance sports, ultra-endurance", "horseracing": "horse racing, thoroughbred, derby, turf, racecourse, jockey", "trotting": "harness racing, standardbred, sulky", "pool": "billiards, cue sports, 8-ball, 9-ball, american pool", "cheer": "cheerleading, competitive cheer, stunt, pom, spirit", "row": "rowing, crew, sculling, regatta", "sail": "sailing, yachting, dinghy, regatta", "swim": "swimming, competitive swimming, freestyle, breaststroke", "cycling": "road cycling, track cycling, velodrome, competitive, Tour de France, criterium, cyclocross", "bodyboard": "bodyboarding, boogie board", "canoe": "canoeing, paddling, canoe trip", "diving": "diving, scuba diving, freediving", "foiling": "efoil, hydrofoil, foilboard, foil surfing", "jetski": "jet skiing, personal watercraft, PWC", "kayak": "kayaking, sea kayaking, whitewater kayaking", "kiting": "kitesurfing, kiteboarding", "paddling": "paddling, SUP, stand-up paddleboarding", "raft": "rafting, whitewater rafting, river rafting", "scuba": "scuba diving, diving", "snorkel": "snorkelling, snorkeling", "surf": "surfing, surfboard, wave riding", "tubing": "river tubing, snow tubing", "wakeboard": "wakeboarding", "wildswimming": "open water swimming, cold water swimming, wild swim", "windsurf": "windsurfing", "winging": "wing foiling, wing surfing, wingfoil", "basejump": "base jumping, BASE jump", "bungee": "bungee jumping, bungy", "extreme": "extreme sports, adventure sports", "glide": "gliding, sailplane, soaring", "hanggliding": "hang gliding", "wingsuit": "wingsuit flying, wingsuiting", "wingwalk": "wing walking", "zipline": "ziplining, canopy tour", "zorb": "zorbing, sphereing", "sled": "sledding, tobogganing, sledging", "snowbiking": "snow bike, snowbike, ski bike, winter cycling", "snowblade": "snowblading, skiboarding", "snowkite": "snowkiting", "snowmobile": "snowmobiling, sled, sledding, ski-doo, polaris, powersports", "snowshoe": "snowshoeing", "snowskate": "snowskating", "snowtube": "snow tubing", "toboggan": "tobogganing, sledding", "forage": "foraging, wild food, wildcrafting", "geocache": "geocaching", "hunt": "hunting, game hunting, bowhunting", "scout": "scouting, scouts", "hike": "hiking, day hiking, thru-hiking", "ramble": "rambling, countryside walking", "rucking": "rucking, weighted walking, ruck march, GoRuck", "running": "running, jogging, road running, 5k, marathon", "trailrunning": "ultramarathon, ultra running, fell running, trail run", "trail": "trails, hiking trail, trailhead, thru-hike, footpath", "trek": "trekking, backpacking, expedition", "walk": "walking, hillwalking, rambling", "cycle": "recreational cycling, mountain biking, MTB, gravel, bikepacking, leisure cycling", "gravel": "gravel cycling, gravel bike, gravel riding, gravel grinding, adventure cycling", "skate": "skateboarding, inline skating, roller skating", "abseil": "abseiling, rappelling, rope descent", "cliffjump": "cliff jumping, tombstoning", "climb": "climbing, rock climbing, bouldering, sport climbing", "mountain": "mountaineering, alpine, alpinism, summit, peak, mountains", "camp": "camping, campsite, backcountry camping", "glamp": "glamping, luxury camping", "prepper": "prepping, survivalism, doomsday prep", "canyon": "canyons, gorge, ravine, Grand Canyon, canyoning", "cave": "caving, spelunking, potholing", "obstacle": "obstacle course racing, OCR, mud run", "orienteer": "orienteering", "cheerleader": "cheerleader, cheerleading, pro cheerleader, dance team", "aesthetics": "aesthetic medicine, medical aesthetics", "bleph": "blepharoplasty, eyelid surgery, eye lift", "boobjob": "breast augmentation, boob job, implants", "breastlift": "breast lift, mastopexy", "browlift": "brow lift, forehead lift", "buttlift": "BBL, brazilian butt lift", "carboxytherapy": "carboxytherapy, CO2 therapy", "dermaplane": "dermaplaning, exfoliation facial", "facelift": "facelift, rhytidectomy", "fatfreezing": "fat freezing, cryolipolysis, coolsculpting", "hairremoval": "hair removal, laser hair removal, IPL, waxing", "injectables": "injectables, botox, fillers", "liposuction": "liposuction, lipo, fat removal", "mesotherapy": "mesotherapy, injectable", "microblading": "microblading, brow tattoo, semi-permanent brows", "microcurrent": "microcurrent, facial toning", "microdermabrasion": "microdermabrasion, exfoliation", "microneedling": "microneedling, derma roller, collagen induction", "nosejob": "nose job, rhinoplasty", "peel": "chemical peel, glycolic peel, skin peel, chemical exfoliation", "plasticsurgery": "plastic surgery, cosmetic surgery, aesthetic surgery", "sugaring": "sugaring, sugar wax, hair removal", "threading": "threading, eyebrow threading", "tightening": "skin tightening, firming", "tummytuck": "tummy tuck, abdominoplasty", "ultherapy": "ultherapy, ultrasound facial, skin tightening", "waxing": "waxing, wax, brazilian wax, hair removal", "brow": "brows, eyebrows, brow bar", "lash": "lashes, eyelashes, lash extensions, false lashes", "lipstick": "lipstick, lip colour, lip gloss, lippie", "makeup": "makeup, cosmetics, mascara, concealer, eyeliner, eyeshadow, foundation, blush, bronzer, contour", "attar": "attar, ittar, natural perfume oil", "colognes": "cologne, colognes, aftershave, mens fragrance", "fragrances": "fragrance, fragrances, scent, perfume, cologne", "oud": "oud, oudh, agarwood, arabian perfume", "perfume": "perfume, fragrance, eau de parfum, scent", "beard": "beard, beard care, beard oil, stubble", "grooming": "grooming, mens grooming, beard, shave, razor", "razor": "razor, shaver, safety razor, shaving", "shave": "shave, shaving, wet shaving", "haircare": "hair care, shampoo, conditioner, highlights, extensions, blonde, brunette, curls, perm, scalp, haircut", "hairloss": "hair loss, alopecia, thinning hair, baldness, hair transplant", "wig": "wig, wigs, hairpiece, toupee", "henna": "henna, mehndi, body art, hair dye", "mehndi": "mehndi, henna, bridal henna", "piercing": "piercing, body piercing, ear piercing", "tattoo": "tattoo, tattoos, ink, body art, tattooist", "cbeauty": "C-beauty, chinese beauty", "cleanbeauty": "clean beauty, non-toxic, natural beauty", "jbeauty": "J-beauty, japanese beauty", "kbeauty": "K-beauty, korean beauty, korean skincare", "bodycare": "body care, lotion, body scrub, deodorant, toiletries", "soap": "soap, bar soap, body wash, handmade soap", "sunscreen": "sunscreen, SPF, sunblock, sun protection, suncare", "tan": "tan, tanning, spray tan, self tan, fake tan, sunless tanning, bronzing, suntan", "medspa": "med spa, medical spa, medispa, aesthetics clinic", "salon": "salon, beauty salon, hair salon, nail salon", "skin": "skincare, serum, moisturizer, cleanser, toner, facial, exfoliation, retinol, hyaluronic acid, acne, wrinkles, anti-aging, glow", "nails": "nails, manicure, pedicure, nail polish, nail art, gel nails, nail bar", "bootcamp": "fitness bootcamp, boot camp, group training", "gym": "gym, fitness center, health club, weights, spin class, spinning, indoor cycling", "workout": "workout, workout routine, training plan", "bodybuilding": "bodybuilding, muscle building, physique", "calisthenics": "calisthenics, bodyweight training, street workout", "powerlifting": "powerlifting, deadlift, squat, bench press", "strength": "strength training, resistance training, lifting", "weightlifting": "weightlifting, olympic lifting, clean and jerk", "aerobics": "aerobics, step aerobics, aerobic class", "hiit": "HIIT, high intensity interval training", "barre": "barre fitness, ballet barre", "pilates": "pilates, reformer pilates, mat pilates", "qigong": "qigong, chi kung, energy work", "taichi": "tai chi, taiji, tai chi chuan", "yoga": "yoga, vinyasa, hatha, yoga studio, asana", "dance": "dance, dancing, dance fitness, dance cardio, zumba, ballroom, salsa, hip hop, choreography, ballet", "poledance": "pole dancing, pole fitness, pole studio"};
 
 /* Fully-themed gateways (data from desktop V1). ClimbXX = the one real build. */
 const GATEWAYS = {
@@ -1265,7 +1420,7 @@ const state = {
   gwBarPage:'commerce',   // gateway sub-bar page: 'commerce' (Feed·Brands·Apps) ⇄ 'more' (Pro's·Communities·Business)
   zoneBarPage:'main',     // zone sub-bar page: 'main' (Feed·Shop·Bag) ⇄ 'more' (Media·About·Events)
   drawerOpen:false,      // left-edge sector drawer (X-style)
-  discoverSector:null, discoverQ:'',
+  discoverSector:null, discoverGroup:null, discoverQ:'',
   aiThread:[], aiAgent:null, aiTyping:false, aiPendingQ:'',   // AI tab conversation (survives the tab toggle)
   eventsFilter:'all',    // Events tab filter: all | live | drops | alerts | bookmarks
   zone:null, zoneTab:'feed', _zoneIn:false,   // zone canvas: open zone key + its tab (feed | products | about)
@@ -1277,6 +1432,7 @@ const state = {
   wallet:[{name:'Route Logger',color:'#4ADE80',gw:'ClimbXX'}],
   favs:[...FAVS_INIT.favs],        // seeded from YOUR_GATEWAYS on first run, else restored from localStorage
   showFavs:false, favTab:'favs',   // ★ panel open? + which tab: 'favs' | 'recent'
+  secQuery:'', gwQuery:'',          // drawer search fields (Sectors / Gateways)
   showApply:false, showInfo:false, infoTab:'intro',   // home top-bar overlays: person→Apply, ⓘ→Info feed (2026-07-29)
   brandFavs:[...FAVS_INIT.brandFavs],   // favourite BRANDS (zone keys) — persisted alongside gateway favs
   sectorFavs:[...FAVS_INIT.sectorFavs], // favourite SECTORS (sector keys) — pinned via ★ on sector rows
@@ -1395,6 +1551,7 @@ function setTab(t){
     scroll:$('screen').scrollTop,
   };
   state.tab=t; state.screen='root'; state.gateway=null; state._gwObj=null; state.showFavs=false; state.returnGw=null;
+  if(t==='discover'){ state.discoverSector=null; state.discoverGroup=null; state.discoverQ=''; }   // fresh cards view each open
   render(); $('screen').scrollTo(0,0);
 }
 function toggleFav(key){
@@ -1861,20 +2018,40 @@ function washFor(grad){
    left edge-bar in the sector's accent — echoing the sector header so the list feels
    "lit" by where you are (mirrors the desktop deck). Rebuilt on each open so the
    highlight always tracks the active sector. */
+function onSecSearch(v){ state.secQuery=v; buildDrawer(); }   // input is static DOM → focus is retained
+function drawerSecRow(s, active){                 // one sector row in the left drawer
+  const on = s.key===active;
+  const {accent, wash} = washFor(s.g);
+  const fav = state.sectorFavs.includes(s.key);
+  const rowStar = `<div onclick="event.stopPropagation();toggleSectorFavQuiet('${s.key}')" title="${fav?'Unpin sector':'Pin sector'}"
+    style="font-size:15px;line-height:1;padding:6px 2px 6px 8px;cursor:pointer;color:${fav?'#F5B800':'rgba(17,17,22,.22)'}">${fav?'★':'☆'}</div>`;
+  return `<div class="drow"${on?' id="drawerActiveRow"':''} style="${on?`background:${wash};box-shadow:inset 3px 0 0 ${accent};`:''}" onclick="pickSector('${s.key}')">
+    <div class="dic" style="background:${s.g}">${s.icon}</div>
+    <div style="flex:1"><div class="dnm" style="${on?`color:${accent};`:''}">${s.name}</div><div class="dct">${gwCount(s.key)} gateways${sectorIsLive(s.key)?' · LIVE':''}</div></div>
+    <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">${sectorIsLive(s.key)?LIVE_DOT:''}${rowStar}</div>
+  </div>`;
+}
 function buildDrawer(){
   const active = activeSectorKey();
-  $('drawerList').innerHTML = [...SECTORS].sort((a,b)=>(sectorIsLive(b.key)?1:0)-(sectorIsLive(a.key)?1:0)).map(s=>{
-    const on = s.key===active;
-    const {accent, wash} = washFor(s.g);
-    const fav = state.sectorFavs.includes(s.key);
-    const rowStar = `<div onclick="event.stopPropagation();toggleSectorFavQuiet('${s.key}')" title="${fav?'Unpin sector':'Pin sector'}"
-      style="font-size:15px;line-height:1;padding:6px 2px 6px 8px;cursor:pointer;color:${fav?'#F5B800':'rgba(17,17,22,.22)'}">${fav?'★':'☆'}</div>`;
-    return `<div class="drow"${on?' id="drawerActiveRow"':''} style="${on?`background:${wash};box-shadow:inset 3px 0 0 ${accent};`:''}" onclick="pickSector('${s.key}')">
-      <div class="dic" style="background:${s.g}">${s.icon}</div>
-      <div style="flex:1"><div class="dnm" style="${on?`color:${accent};`:''}">${s.name}</div><div class="dct">${gwCount(s.key)} gateways${sectorIsLive(s.key)?' · LIVE':''}</div></div>
-      <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">${sectorIsLive(s.key)?LIVE_DOT:''}${rowStar}</div>
-    </div>`;
-  }).join('');
+  const q = (state.secQuery||'').trim().toLowerCase();
+  if(q){                                          // search flattens the groups, live-first
+    $('drawerList').innerHTML = [...SECTORS]
+      .filter(s=> s.name.toLowerCase().includes(q) || s.key.toLowerCase().includes(q))
+      .sort((a,b)=>(sectorIsLive(b.key)?1:0)-(sectorIsLive(a.key)?1:0))
+      .map(s=>drawerSecRow(s,active)).join('')
+      || `<div class="empty">No sectors match “${esc(state.secQuery)}”.</div>`;
+    updateSecJump(q);
+    return;
+  }
+  let out='', gi=-1;                              // browse view → sticky sub-section dividers, master order
+  for(const grp of SECTOR_GROUPS){
+    const tiles = SECTORS.filter(s=>s.group===grp.key);
+    if(!tiles.length) continue;
+    out += `<div class="gwanchor" id="secsec-${++gi}"></div><div class="gwsec">${grp.label}</div>`
+         + tiles.map(s=>drawerSecRow(s,active)).join('');
+  }
+  $('drawerList').innerHTML = out;
+  updateSecJump('');
 }
 function openDrawer(){
   const frame=$('frame');
@@ -1883,6 +2060,8 @@ function openDrawer(){
   if(window.__resetChrome) window.__resetChrome();
   const off = drawerFlushTop();
   $('drawer').style.top = off+'px'; $('scrim').style.top = off+'px';
+  state.secQuery=''; { const si=$('secSearch'); if(si) si.value=''; }   // fresh search each open
+  { const p=$('secJump'); if(p) p.hidden=true; }                        // jump popover closed on open
   buildDrawer();                                 // reflect the sector you're currently inside
   const dl=$('drawerList'), act=$('drawerActiveRow');
   if(act){                                       // inside a sector → bring that sector's row into view (it may be lower down)
@@ -1905,7 +2084,8 @@ function openDrawerR(){
   const sk=activeSectorKey(); if(!sk) return;
   frame.classList.remove('chrome-hidden','drawer-open');
   if(window.__resetChrome) window.__resetChrome();
-  state.drawerRFavs = false;                      // always open on the sector view
+  state.gwQuery=''; { const gi=$('gwSearch'); if(gi) gi.value=''; }   // fresh search each open
+  { const p=$('gwJump'); if(p) p.hidden=true; }                        // jump popover closed on open
   buildDrawerR();
   const off = drawerFlushTop();
   $('drawerR').style.top = off+'px'; $('scrimR').style.top = off+'px';
@@ -1930,53 +2110,114 @@ function gwMetaFromKey(k){
   }
   return null;
 }
+function onGwSearch(v){ state.gwQuery=v; buildDrawerR(); }   // input is static DOM → focus is retained
+// Gateway name + its search_tags, lowercased. GW_TAGS is populated when the Excel
+// lists are imported; until then this matches on the name alone (typeof guard).
+function gwSearchText(name){
+  const key=gwKeyFromName(name);
+  const tags = (typeof GW_TAGS!=='undefined' && GW_TAGS[key]) ? ' '+GW_TAGS[key] : '';
+  return (name+tags).toLowerCase();
+}
 function buildDrawerR(){
   const sk=activeSectorKey();
   // The right drawer is ALWAYS the sector's gateways (the "family" list) — same on home,
   // sector and inside a brand zone. At zone level activeSectorKey() resolves to the parent
   // gateway's sector, so the family below renders without a zone-specific branch.
-  const headStar =`<div onclick="state.drawerRFavs=!state.drawerRFavs;buildDrawerR()" title="Favourites — all sectors"
-    style="margin-left:auto;cursor:pointer;font-size:17px;line-height:1;padding:2px 2px 2px 10px;color:${state.drawerRFavs?'#F5B800':'rgba(17,17,22,.35)'}">${state.drawerRFavs?'★':'☆'}</div>`;
   const rowStar = k => `<div onclick="event.stopPropagation();toggleFavQuiet('${k}')"
     style="font-size:15px;line-height:1;padding:6px 2px 6px 8px;cursor:pointer;color:${state.favs.includes(k)?'#F5B800':'rgba(17,17,22,.22)'}">${state.favs.includes(k)?'★':'☆'}</div>`;
   const actGw = activeGatewayName();               // light the gateway you're currently inside, in its own colour
   const actKey = actGw ? gwKeyFromName(actGw) : null;
-
-  if(state.drawerRFavs){
-    $('drawerRHead').innerHTML = `<span class="dic-sm" style="background:linear-gradient(135deg,#111116,#3a3a44)">★</span>Favourites · all sectors ${headStar}`;
-    $('drawerRList').innerHTML = state.favs.length ? state.favs.map(k=>{
-      const g=gwMetaFromKey(k); if(!g) return ''; const s=sectorOf(g.sector);
-      const on = actKey && k===actKey; const {accent, wash} = washFor(g.gradient);
-      return `<div class="drow"${on?' id="drawerRActiveRow"':''} style="${on?`background:${wash};box-shadow:inset 3px 0 0 ${accent};`:''}" onclick="pickGateway('${g.name}','${g.sector}')">
-        <div class="dic" style="background:${g.gradient}">${g.emoji}</div>
-        <div style="flex:1"><div class="dnm" style="${on?`color:${accent};`:''}">${g.name}</div><div class="dct">${s.icon} ${s.name} · ${g.domain}${g.live?' · LIVE':''}</div></div>
-        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">${g.live?LIVE_DOT:''}${rowStar(k)}</div>
-      </div>`;}).join('')
-      : `<div class="empty">No favourites yet —<br>tap ☆ on any gateway to pin it here.</div>`;
+  const s=sectorOf(sk);
+  const q=(state.gwQuery||'').trim().toLowerCase();
+  const names=(SECTOR_GATEWAYS[sk]||[]);
+  const isFav = n => state.favs.includes(gwKeyFromName(n));
+  const gwRow = name => {
+    const key=gwKeyFromName(name); const real=GATEWAYS[key];
+    const on = actKey && key===actKey; const {accent, wash} = washFor(real?real.gradient:s.g);
+    return `<div class="drow"${on?' id="drawerRActiveRow"':''} style="${on?`background:${wash};box-shadow:inset 3px 0 0 ${accent};`:''}" onclick="pickGateway('${name}','${sk}')">
+      <div class="dic" style="background:${real?real.gradient:s.g}">${real?real.emoji:s.icon}</div>
+      <div style="flex:1"><div class="dnm" style="${on?`color:${accent};`:''}">${name}<span style="opacity:.4;font-weight:600">.com</span></div></div>
+      <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">${real?LIVE_DOT:''}${rowStar(key)}</div>
+    </div>`;};
+  let out;
+  if(q){
+    // Searching → flatten across sub-groups, drop dividers, live first. Matches name + tags.
+    out = names.filter(n=>!isGwHeader(n)).filter(n=>gwSearchText(n).includes(q))
+      .sort((a,b)=>(gwIsLive(b)?1:0)-(gwIsLive(a)?1:0)).map(gwRow).join('');
+  } else if(hasGwGroups(sk)){
+    // Grouped sector — file order; sticky sub-group dividers double as jump anchors (id=gwsec-N).
+    let gi=-1;
+    out = names.map(n => isGwHeader(n)
+      ? `<div class="gwanchor" id="gwsec-${++gi}"></div><div class="gwsec">${n.slice(1)}</div>`
+      : gwRow(n)).join('');
   } else {
-    const s=sectorOf(sk);
-    $('drawerRHead').innerHTML = `<span class="dic-sm" style="background:${s.g}">${s.icon}</span>${s.name} · Gateways ${headStar}`;
-    const names=(SECTOR_GATEWAYS[sk]||[]);
-    const isFav = n => state.favs.includes(gwKeyFromName(n));
-    const gwRow = name => {
-      const key=gwKeyFromName(name); const real=GATEWAYS[key];
-      const on = actKey && key===actKey; const {accent, wash} = washFor(real?real.gradient:s.g);
-      return `<div class="drow"${on?' id="drawerRActiveRow"':''} style="${on?`background:${wash};box-shadow:inset 3px 0 0 ${accent};`:''}" onclick="pickGateway('${name}','${sk}')">
-        <div class="dic" style="background:${real?real.gradient:s.g}">${real?real.emoji:s.icon}</div>
-        <div style="flex:1"><div class="dnm" style="${on?`color:${accent};`:''}">${name}</div><div class="dct">${domainOf(name)}${real?' · LIVE':''}</div></div>
-        <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">${real?LIVE_DOT:''}${rowStar(key)}</div>
-      </div>`;};
-    let out;
-    if(hasGwGroups(sk)){
-      // Grouped sector — keep the file order and drop a divider before each sub-group.
-      out = names.map(n => isGwHeader(n) ? gwGroupDivider(n.slice(1)) : gwRow(n)).join('');
-    } else {
-      // Plain sector — built-out (live) gateways rise to the top; favourites rise first within each tier.
-      const rank = n => (gwIsLive(n)?0:2) + (isFav(n)?0:1);
-      out = [...names].sort((a,b)=>rank(a)-rank(b)).map(gwRow).join('');
-    }
-    $('drawerRList').innerHTML = out;
+    // Plain sector — built-out (live) gateways rise to the top; favourites rise first within each tier.
+    const rank = n => (gwIsLive(n)?0:2) + (isFav(n)?0:1);
+    out = [...names].sort((a,b)=>rank(a)-rank(b)).map(gwRow).join('');
   }
+  $('drawerRList').innerHTML = out || `<div class="empty">No gateways match “${esc(state.gwQuery)}”.</div>`;
+  updateGwJump(sk, q);   // show the "Jump ▾" control only for grouped sectors while browsing
+}
+// ── "Jump ▾" — quick-scroll to a sub-group. Anchors are the sticky .gwsec dividers. ──
+function gwGroupsOf(sk){                       // [{name,count,index}] in file order
+  const names=SECTOR_GATEWAYS[sk]||[]; const groups=[]; let gi=-1;
+  for(const n of names){
+    if(isGwHeader(n)){ groups.push({name:n.slice(1), count:0, index:++gi}); }
+    else if(gi>=0){ groups[gi].count++; }
+  }
+  return groups;
+}
+function updateGwJump(sk, q){
+  const btn=$('gwJumpBtn'); if(!btn) return;
+  const show = hasGwGroups(sk) && !q;
+  btn.style.display = show ? 'flex' : 'none';
+  if(!show){ const p=$('gwJump'); if(p) p.hidden=true; }
+}
+function toggleGwJump(e){
+  if(e) e.stopPropagation();
+  const p=$('gwJump'); if(!p) return;
+  if(!p.hidden){ p.hidden=true; return; }
+  const groups=gwGroupsOf(activeSectorKey());
+  p.innerHTML = `<div class="gwjump-h">Jump to section</div>`+groups.map(g=>
+    `<div class="gwjump-item" onclick="gwJumpTo(${g.index})">${g.name}<span>${g.count}</span></div>`).join('');
+  p.hidden=false;
+}
+function gwJumpTo(i){
+  const p=$('gwJump'); if(p) p.hidden=true;
+  const list=$('drawerRList'), el=$('gwsec-'+i); if(!list||!el) return;
+  // offsetTop is the divider's NORMAL-flow position (unaffected by sticky pinning or current
+  // scroll), so repeat jumps land correctly every time. Both offsets share #drawerR as offsetParent.
+  list.scrollTo({top: Math.max(0, el.offsetTop - list.offsetTop), behavior:'smooth'});
+}
+
+/* Sector-drawer Jump — same mechanics as the gateway Jump, over the SECTOR_GROUPS
+   sub-sections. Anchors are the zero-height .gwanchor `secsec-N` before each divider. */
+function secGroupsOf(){                          // [{label,count,index}] for non-empty groups, in order
+  const groups=[]; let gi=-1;
+  for(const grp of SECTOR_GROUPS){
+    const count=SECTORS.filter(s=>s.group===grp.key).length;
+    if(count) groups.push({label:grp.label, count, index:++gi});
+  }
+  return groups;
+}
+function updateSecJump(q){
+  const btn=$('secJumpBtn'); if(!btn) return;
+  const show = !q && SECTOR_GROUPS.length>0;     // grouped browse view only; search hides it
+  btn.style.display = show ? 'flex' : 'none';
+  if(!show){ const p=$('secJump'); if(p) p.hidden=true; }
+}
+function toggleSecJump(e){
+  if(e) e.stopPropagation();
+  const p=$('secJump'); if(!p) return;
+  if(!p.hidden){ p.hidden=true; return; }
+  p.innerHTML = `<div class="gwjump-h">Jump to section</div>`+secGroupsOf().map(g=>
+    `<div class="gwjump-item" onclick="secJumpTo(${g.index})">${g.label}<span>${g.count}</span></div>`).join('');
+  p.hidden=false;
+}
+function secJumpTo(i){
+  const p=$('secJump'); if(p) p.hidden=true;
+  const list=$('drawerList'), el=$('secsec-'+i); if(!list||!el) return;
+  list.scrollTo({top: Math.max(0, el.offsetTop - list.offsetTop), behavior:'smooth'});
 }
 function toggleFavQuiet(k){    // toggle without a full render — the drawer stays open
   const i=state.favs.indexOf(k);
@@ -4580,46 +4821,83 @@ function receiptSheetHtml(){
   </div>`;
 }
 
-/* ═════════ DISCOVER ═════════ */
+/* ═════════ DISCOVER — network-wide directory + search ═════════
+   Three states: (1) typing → flat tag-aware gateway search across every sector;
+   (2) a sector picked → that sector's gateways (grouped/flat); (3) at rest → sector
+   cards grouped by the three sub-sections. gwSearchText() folds in the search_tags. */
 function renderDiscover(){
-  const q = state.discoverQ.toLowerCase();
-  const chips = `<div class="chips"><div class="chip ${!state.discoverSector?'on':''}" onclick="state.discoverSector=null;render()">All</div>${SECTORS.map(s=>`<div class="chip ${state.discoverSector===s.key?'on':''}" onclick="state.discoverSector='${s.key}';render()">${s.icon} ${s.name}</div>`).join('')}</div>`;
-  let rows='';
-  const secs = (state.discoverSector ? [state.discoverSector] : Object.keys(SECTOR_GATEWAYS))
-    .sort((a,b)=>(sectorIsLive(b)?1:0)-(sectorIsLive(a)?1:0));   // built-out sectors first
-  secs.forEach(sk=>{
-    const s = sectorOf(sk); if(!s) return;
-    const gwrow = name => {
-      const real = GATEWAYS[gwKeyFromName(name)];
-      return `<div class="gwrow" onclick="state._gwFrom='root';openGateway('${name}','${sk}')">
-        <div class="em" style="background:${real?real.gradient:s.g}">${real?real.emoji:s.icon}</div>
-        <div><div class="nm">${name}</div><div class="dm">${domainOf(name)} · ${s.name}</div></div>
-        <div class="badge ${real?'live':'soon'}">${real?'LIVE':'STRUCTURAL'}</div>
-      </div>`;};
-    const raw = SECTOR_GATEWAYS[sk]||[];
-    if(hasGwGroups(sk) && !q){
-      // Grouped sector, no active search — keep file order with a divider before each sub-group.
-      raw.forEach(n => { rows += isGwHeader(n) ? gwGroupDivider(n.slice(1),'discover') : gwrow(n); });
-    } else {
-      // Plain sector, or an active search (flatten + live-first sort, headers dropped).
-      raw.filter(n=>!isGwHeader(n))
-         .filter(name=> !q || name.toLowerCase().includes(q))
-         .sort((a,b)=>(gwIsLive(b)?1:0)-(gwIsLive(a)?1:0))
-         .forEach(name=> rows += gwrow(name));
-    }
-  });
-  if (!rows) rows = `<div class="empty">No gateways match "${state.discoverQ}"</div>`;
-  return `${topBar()}
-  <div class="push">
-    <div class="searchbox">
+  const q = state.discoverQ.toLowerCase().trim();
+  const gwrow = (name, sk) => {                    // one gateway row (search + drill-down share it)
+    const real = GATEWAYS[gwKeyFromName(name)];
+    const useSk = (real && real.sector) || sk;
+    const s = sectorOf(useSk);
+    return `<div class="gwrow" onclick="state._gwFrom='root';openGateway('${name}','${useSk}')">
+      <div class="em" style="background:${real?real.gradient:(s?s.g:'#888')}">${real?real.emoji:(s?s.icon:'?')}</div>
+      <div><div class="nm">${name}</div><div class="dm">${domainOf(name)}${s?' · '+s.name:''}</div></div>
+      <div class="badge ${real?'live':'soon'}">${real?'LIVE':'STRUCTURAL'}</div>
+    </div>`;
+  };
+  const searchbox = `<div class="searchbox">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(17,17,22,.4)" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       <input placeholder="Search gateways, brands, anything…" value="${esc(state.discoverQ)}" oninput="state.discoverQ=this.value;render();this.focus();this.setSelectionRange(this.value.length,this.value.length)">
-    </div>
-    ${chips}
-    <div style="height:8px"></div>
-    ${rows}
-    <div style="height:14px"></div>
-  </div>`;
+    </div>`;
+  const shell = inner => `${topBar()}<div class="push">${searchbox}${inner}<div style="height:14px"></div></div>`;
+
+  // ── STATE 1: SEARCH — flatten every sector, tag-aware, deduped, live-first ──
+  if(q){
+    const seen=new Set(), hits=[];
+    Object.keys(SECTOR_GATEWAYS).forEach(sk=>{
+      if(!sectorOf(sk)) return;
+      (SECTOR_GATEWAYS[sk]||[]).forEach(n=>{
+        if(isGwHeader(n)) return;
+        const k=gwKeyFromName(n); if(seen.has(k)) return;
+        if(gwSearchText(n).toLowerCase().includes(q)){ seen.add(k); hits.push({n,sk}); }
+      });
+    });
+    hits.sort((a,b)=>(gwIsLive(b.n)?1:0)-(gwIsLive(a.n)?1:0));
+    const rows = hits.map(h=>gwrow(h.n,h.sk)).join('')
+      || `<div class="empty">No gateways match “${esc(state.discoverQ)}”</div>`;
+    return shell(`<div style="height:8px"></div>${rows}`);
+  }
+
+  // ── STATE 2: DRILL-DOWN — one sector's gateways ──
+  if(state.discoverSector){
+    const sk=state.discoverSector, s=sectorOf(sk);
+    if(!s){ state.discoverSector=null; return renderDiscover(); }
+    let rows=''; const raw=SECTOR_GATEWAYS[sk]||[];
+    if(hasGwGroups(sk)){
+      raw.forEach(n=> rows += isGwHeader(n) ? gwGroupDivider(n.slice(1),'discover') : gwrow(n,sk));
+    } else {
+      raw.filter(n=>!isGwHeader(n)).sort((a,b)=>(gwIsLive(b)?1:0)-(gwIsLive(a)?1:0)).forEach(n=> rows+=gwrow(n,sk));
+    }
+    if(!rows) rows=`<div class="empty">${s.name} has no gateways yet.</div>`;
+    const head = `<div class="discback" onclick="state.discoverSector=null;render();$('screen').scrollTo(0,0)">‹ All sectors</div>
+      <div class="dischead"><div class="ic" style="background:${s.g}">${s.icon}</div>
+        <div><div class="nm" style="font-size:15px;font-weight:800">${s.name}</div>
+          <div class="dm">${gwCount(sk)} gateways${sectorIsLive(sk)?' · LIVE':''}</div></div></div>`;
+    return shell(head + rows);
+  }
+
+  // ── STATE 3: REST — sector cards grouped by sub-section ──
+  const gchips = `<div class="chips"><div class="chip ${!state.discoverGroup?'on':''}" onclick="state.discoverGroup=null;render()">All</div>`
+    + SECTOR_GROUPS.map(g=>`<div class="chip ${state.discoverGroup===g.key?'on':''}" onclick="state.discoverGroup='${g.key}';render()">${g.label}</div>`).join('')
+    + `</div>`;
+  let body='';
+  for(const grp of SECTOR_GROUPS){
+    if(state.discoverGroup && state.discoverGroup!==grp.key) continue;
+    const tiles=SECTORS.filter(x=>x.group===grp.key); if(!tiles.length) continue;
+    body += `<div class="secgrouphd">${grp.label}</div><div class="seccards">`
+      + tiles.map(s=>{
+          const live=sectorIsLive(s.key), c=gwCount(s.key);
+          return `<div class="seccard${live?' live':''}" onclick="state.discoverSector='${s.key}';render();$('screen').scrollTo(0,0)">
+            <div class="ic" style="background:${s.g}">${s.icon}</div>
+            <div class="nm">${s.name}</div>
+            <div class="mt">${c} ${c===1?'gateway':'gateways'}${live?' · LIVE':''}</div>
+          </div>`;
+        }).join('')
+      + `</div>`;
+  }
+  return shell(gchips + body);
 }
 
 /* ═════════ FEED TAB — same Network surface as Home, opened on the Feed view.
