@@ -2068,9 +2068,10 @@ function openDrawer(){
     dl.scrollTop = 0;
   }
   state.drawerOpen=true; frame.classList.add('drawer-open');
+  syncNetbar();                                  // light the Sectors slot while the drawer is open
   clearNudge('edgeL');
 }
-function closeDrawer(){ state.drawerOpen=false; $('frame').classList.remove('drawer-open'); }
+function closeDrawer(){ state.drawerOpen=false; $('frame').classList.remove('drawer-open'); syncNetbar(); }
 function pickSector(key){ closeDrawer(); openSector(key); }
 
 /* Right drawer — the sector's gateways (favourites risen to the top), rebuilt on open.
@@ -2094,6 +2095,7 @@ function openDrawerR(){
     dlr.scrollTop = 0;
   }
   frame.classList.add('drawer-open-r');
+  syncNetbar();                                  // light the Gateways slot while the drawer is open
   clearNudge('edgeR');
 }
 /* resolve any fav key to display data — live gateways from GATEWAYS, structural
@@ -2221,7 +2223,7 @@ function toggleFavQuiet(k){    // toggle without a full render — the drawer st
   if(i>=0) state.favs.splice(i,1); else state.favs.push(k);
   saveFavs(); buildDrawerR();
 }
-function closeDrawerR(){ $('frame').classList.remove('drawer-open-r'); }
+function closeDrawerR(){ $('frame').classList.remove('drawer-open-r'); syncNetbar(); }
 function pickGateway(name, sk){ closeDrawerR(); state._gwFrom='sector'; openGateway(name, sk); }
 
 /* ═════════ CHROME ═════════ */
@@ -2323,6 +2325,19 @@ function navSubBar(){
     ${item(secLabel, 'openDrawer()', secOn, s?'Switch sector':'Choose a sector')}
     ${item(gwLabel, gwNudge?"clearNudge('barGws');gatewaysTap()":'gatewaysTap()', gwOn, gw?`${gw.name} — switch gateway`:'Gateways', gwNudge)}
   </div>`;
+}
+/* Keep the Network·Sectors·Gateways sub-bar highlight in sync with an OPEN drawer.
+   Opening a drawer lights its slot as "tapped" even before a sector/gateway is chosen;
+   closing without a selection reverts to the slot the current screen implies (Network at
+   home). Toggles classes directly so the drawer can open without a full screen re-render. */
+function syncNetbar(){
+  const scr=$('screen'); if(!scr) return;
+  const bar=scr.querySelector('.netbar'); if(!bar) return;
+  const tabs=bar.querySelectorAll('.ntab'); if(tabs.length<3) return;
+  let idx = state.screen==='gateway' ? 2 : state.screen==='sector' ? 1 : 0;   // screen default
+  if(state.drawerOpen) idx=1;                                                  // sector drawer open
+  else if($('frame').classList.contains('drawer-open-r')) idx=2;               // gateway drawer open
+  tabs.forEach((t,i)=>t.classList.toggle('on', i===idx));
 }
 /* Gateways only makes sense once you're in a sector. Tap it too early → a friendly
    nudge, and the sectors drawer opens so the fix is right there. */
