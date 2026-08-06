@@ -2227,7 +2227,40 @@ function closeDrawerR(){ $('frame').classList.remove('drawer-open-r'); syncNetba
 function pickGateway(name, sk){ closeDrawerR(); state._gwFrom='sector'; openGateway(name, sk); }
 
 /* ═════════ CHROME ═════════ */
+/* ═════════ SECTOR-AS-DOMAIN TOP BAR (experiment, 2026-08-05) ═════════
+   Every sector is also a domain we own (Sports → SportsXX.com). On a sector feed we can
+   dress the top bar as that domain: keep the GENEXXO dot (still taps back to the hub), drop
+   the wordmark, and nestle a BOLD `SectorXX` + lighter `.com` right beside the mark, with the
+   sector's full gradient swept across the bar (flowing into the tinted sub-bar as one block).
+   Flip SECTOR_DOMAIN_TOPBAR to false to revert entirely to the plain GENEXXO bar. */
+const SECTOR_DOMAIN_TOPBAR = true;
+/* derive a readable mini-theme from a sector's gradient — luminance picks white vs charcoal
+   text (and flips the dot chip) so the domain reads on both dark and bright sectors */
+function sectorTheme(s){
+  const cols = (s.g && s.g.match(/#[0-9a-fA-F]{6}/g)) || ['#26262b'];
+  const lum = h => { const n=parseInt(h.slice(1),16); return 0.299*((n>>16)&255)+0.587*((n>>8)&255)+0.114*(n&255); };
+  const dark = (cols.reduce((a,c)=>a+lum(c),0)/cols.length) < 150;   // dark bar → white text
+  return { bg:s.g, text: dark?'#fff':'#111116', dotBg: dark?'#fff':'#111116', dotFg: dark?'#111116':'#fff', dark };
+}
+function sectorTopBar(s){
+  const th = sectorTheme(s);
+  const chip = (state.returnGw && state.returnGw.sector===state.sector) ? `
+    <div onclick="state._gwFrom='sector';openGateway('${state.returnGw.name}','${state.sector}')" title="Back to ${state.returnGw.name}"
+      style="display:flex;align-items:center;gap:6px;padding:4px 12px 4px 9px;border-radius:99px;background:${th.dark?'rgba(255,255,255,.16)':'rgba(255,255,255,.78)'};font-size:11.5px;font-weight:700;color:${th.dark?'#fff':'var(--ink)'};cursor:pointer;white-space:nowrap">
+      <span style="opacity:.5;font-size:14px;line-height:1">‹</span>
+      <span style="width:18px;height:18px;border-radius:6px;background:${state.returnGw.gradient};display:flex;align-items:center;justify-content:center;font-size:10px">${state.returnGw.emoji}</span>
+      ${state.returnGw.name}</div>` : '';
+  return `<div class="top gw" style="background:${th.bg};color:${th.text}">
+    <div class="gx-mark" onclick="goHub()" title="Back to the GENEXXO hub">
+      <div class="gx-dot" style="background:${th.dotBg};color:${th.dotFg}"><span class="gx-mono"></span></div>
+    </div>
+    <div onclick="event.stopPropagation();document.getElementById('screen').scrollTo({top:0,behavior:'smooth'})" title="${s.name}XX.com — top of feed"
+      style="margin-left:-3px;font-family:var(--cond);font-weight:800;font-size:20px;line-height:1;letter-spacing:.01em;cursor:pointer;color:${th.text}">${s.name}XX<span style="font-weight:600;font-size:13px;opacity:.55;letter-spacing:0;margin-left:1px">.com</span></div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:6px">${chip}</div>
+  </div>`;
+}
 function topBar(gw){
+  if (SECTOR_DOMAIN_TOPBAR && !gw && state.screen==='sector') return sectorTopBar(sectorOf(state.sector));
   const inGw = !!gw;
   const style = inGw ? `background:${gw.theme.headerBg};color:${gw.theme.text};` : '';
   const dotBg = inGw ? (gw.theme.dark?'#fff':'#111116') : '#111116';
@@ -2331,6 +2364,10 @@ function navSubBar(){
    closing without a selection reverts to the slot the current screen implies (Network at
    home). Toggles classes directly so the drawer can open without a full screen re-render. */
 function syncNetbar(){
+  // Only the Network·Sectors·Gateways control bar takes the drawer-open highlight. The gateway
+  // (and zone) screens reuse the same `.netbar` class for their Feed·Brands·Apps bar — leave that
+  // one alone, so opening a drawer in a gateway no longer lights "Brands".
+  if (state.screen==='gateway' || state.screen==='zone') return;
   const scr=$('screen'); if(!scr) return;
   const bar=scr.querySelector('.netbar'); if(!bar) return;
   const tabs=bar.querySelectorAll('.ntab'); if(tabs.length<3) return;
