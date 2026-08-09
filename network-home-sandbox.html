@@ -2318,7 +2318,7 @@ function tapGwZone(k){
   if (k==='feed') state.gwZones=false;                            // explicit Feed tab → the feed
   else if (state.gwZones && state.gwZoneTab===k) state.gwZones=false;   // active tab tapped → feed
   else { state.gwZones=true; state.gwZoneTab=k; }
-  render(); $('screen').scrollTo(0,0);
+  repaintGateway({body:true});     // body genuinely changes; bar + top bar stay put
 }
 /* The › / ‹ arrow on the gateway sub-bar flips between the two heading pages —
    'commerce' (Feed · Brands · Apps) and 'more' (Pro's · Communities · Business).
@@ -2328,9 +2328,12 @@ function tapGwZone(k){
 let _gwBarSwipeAt = 0;
 function tapGwBarPage(){
   clearNudge('barMore');   // the pulse has done its job — retire it forever
+  // Flipping only drops you back to the feed if you were IN a zone. If you're already on
+  // the feed, nothing below the bar changes — so don't touch it, and don't steal your place.
+  const leavingZone = state.gwZones;
   state.gwBarPage = state.gwBarPage==='more' ? 'commerce' : 'more';
   state.gwZones=false;
-  render(); $('screen').scrollTo(0,0);
+  repaintGateway({animateBar:true, body:leavingZone});
 }
 /* Apply track button — used by the Profile "Apply to join" section (interim home for Apply,
    moved off the gateway bar 2026-07-27). Placeholder until the real application flow exists. */
@@ -2927,9 +2930,52 @@ function renderGateway(){
   <div class="push" style="background:${t.bg};color:${t.text};min-height:calc(100dvh - 53px);margin-top:-1px">
     ${bar}
     <div style="height:8px"></div>
-    ${body}
+    <div id="gwBody">${body}</div>
     <div style="height:20px"></div>
   </div>`;
+}
+
+/* ═════════ IN-PLACE GATEWAY REPAINT (2026-08-09) ═════════
+   render() replaces #screen wholesale — top bar, sub-bar, feed, everything. Inside a
+   gateway that's overkill: flipping the bar's page or opening a zone would rebuild the
+   whole screen, tearing down every <video> and resetting scroll. That's the flicker.
+   repaintGateway() re-runs renderGateway() but grafts across ONLY what changed:
+     • the sub-bar (gradient, lit tabs, arrow) — keeping the element so the track can animate
+     • #gwBody, and only when the body actually differs
+   The top bar, favourites panel and scroll position are left completely alone. */
+function repaintGateway(opt){
+  opt = opt || {};
+  const scr = $('screen');
+  const curBar = scr.querySelector('.substick.netbar'), curBody = scr.querySelector('#gwBody');
+  if (state.screen!=='gateway' || !curBar || !curBody){ render(); $('screen').scrollTo(0,0); return; }
+  const tmp = document.createElement('div');
+  tmp.innerHTML = renderGateway();
+  const newBar = tmp.querySelector('.substick.netbar'), newBody = tmp.querySelector('#gwBody');
+  if (!newBar || !newBody){ render(); $('screen').scrollTo(0,0); return; }
+
+  // ── the bar. Swap its contents, then (if asked) run the track from where it actually is
+  //    to where it should be — so tapping the › arrow now slides exactly like a swipe does.
+  const oldTrack = curBar.querySelector('.gwbar-track');
+  const from = oldTrack ? oldTrack.style.transform : '';
+  curBar.style.background = newBar.style.background;
+  curBar.innerHTML = newBar.innerHTML;
+  const track = curBar.querySelector('.gwbar-track');
+  if (track && opt.animateBar && from){
+    track.classList.remove('snap');
+    track.style.transform = from;
+    void track.offsetWidth;                    // force a reflow so the start position takes
+    track.classList.add('snap');
+    track.style.transform = state.gwBarPage==='more' ? 'translateX(-50%)' : 'translateX(0%)';
+  }
+
+  // ── the body, only when it's genuinely different content
+  if (opt.body){
+    curBody.querySelectorAll('video[src]').forEach(v=>{ try{ v.pause(); v.removeAttribute('src'); v.load(); }catch(_){} });
+    curBody.innerHTML = newBody.innerHTML;
+    lazyMedia();
+    scr.scrollTo(0,0);
+    if (window.__syncChrome) window.__syncChrome();
+  }
 }
 
 function toggleApp(name,color,gwName){
@@ -5808,11 +5854,14 @@ buildDrawer();
     const dx = e.changedTouches[0].clientX - sx;
     const onMore = state.gwBarPage==='more';
     const flip = Math.abs(dx) > w*.22 && (onMore ? dx>0 : dx<0);  // far enough, and in a valid direction
-    track.classList.add('snap');
-    track.style.transform = `translateX(${flip ? (onMore?0:-w) : base}px)`;
-    // Let the snap land before re-rendering — tapGwBarPage swaps the gradient, drops back to
-    // the feed and resets scroll, all of which would stamp on the animation mid-flight.
-    if (flip) setTimeout(tapGwBarPage, 210);
+    if (flip){
+      // Commit straight away — repaintGateway picks the track up from wherever the finger
+      // left it and runs it home, so there's no wait and no double movement.
+      tapGwBarPage();
+    } else {
+      track.classList.add('snap');                                // didn't make it — spring back
+      track.style.transform = `translateX(${base}px)`;
+    }
   }, {passive:true});
 })();
 
