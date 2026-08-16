@@ -4951,7 +4951,9 @@ function renderDiscover(bodyOnly){
   };
   const searchbox = `<div class="searchbox">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(17,17,22,.4)" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-      <input id="discoverSearch" placeholder="Search gateways, brands, anything…" value="${esc(state.discoverQ)}" oninput="onDiscoverSearch(this.value)">
+      <input id="discoverSearch" placeholder="Search gateways, brands, anything…" value="${esc(state.discoverQ)}"
+             autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
+             oninput="onDiscoverSearch(this.value)">
     </div>`;
   // The search input is STATIC DOM — only #discoverBody is rewritten while typing, so the
   // field keeps focus and the caret. (Re-rendering the whole screen destroyed the input on
@@ -5025,12 +5027,26 @@ function renderDiscover(bodyOnly){
 /* Discover search — mirrors onGwSearch: state + a targeted redraw, never a full render().
    The input is outside #discoverBody, so it is never replaced and focus is retained. */
 function onDiscoverSearch(v){
+  const wasEmpty = !state.discoverQ;
   state.discoverQ = v;
   state.discoverSector = null;            // typing always returns to the flat result list
   const el = $('discoverBody');
   if(el) el.innerHTML = renderDiscover(true);
   else render();                          // defensive: body missing → fall back to a full draw
-  const sc = $('screen'); if(sc) sc.scrollTo(0,0);
+  /* ⚠️ ANDROID: do NOT scroll #screen on every keystroke.
+     scrollTo() fires the auto-hide-chrome scroll listener, which adds/removes `chrome-hidden`
+     on #frame. That relayouts the frame, and on Android Chrome — with the soft keyboard open and
+     the visual viewport already shrunk — the relayout blurs the focused input, so the user is
+     thrown out of the field after every letter. Desktop never shows it: no soft keyboard, and the
+     chrome toggle doesn't disturb focus.
+     The drawer searches were immune only by accident: initAutoHideChrome() early-returns while a
+     drawer is open, so their scrolls never toggle the chrome. Discover is not a drawer.
+     So: reset the scroll only when ENTERING search (0 → 1 characters), never while refining, and
+     use __syncChrome() to adopt the new position without treating the jump as a user scroll. */
+  if(wasEmpty && v){
+    const sc = $('screen');
+    if(sc){ sc.scrollTop = 0; if(window.__syncChrome) window.__syncChrome(); }
+  }
 }
 
 /* ═════════ FEED TAB — same Network surface as Home, opened on the Feed view.
