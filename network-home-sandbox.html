@@ -135,6 +135,9 @@
   .gwjump-item:active,.gwjump-item:hover{background:var(--bg)}
   .gwjump-item span{font-size:11px;font-weight:800;color:var(--muted);flex-shrink:0}
   .drow{display:flex;align-items:center;gap:12px;padding:11px 18px;cursor:pointer}
+  .gwsec-wide{color:var(--muted);background:#FAFAFB}
+  .drow-wide .dnm{font-weight:600}
+  .drow-wide .dwhere{font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:2px}
   .drow:active,.drow:hover{background:var(--bg)}
   .drow .dic{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#fff;flex-shrink:0}
   .drow .dnm{font-size:13.5px;font-weight:700;line-height:1.15}
@@ -2055,6 +2058,40 @@ function gwSearchText(name){
   const tags = (typeof GW_TAGS!=='undefined' && GW_TAGS[key]) ? ' '+GW_TAGS[key] : '';
   return (name+tags).toLowerCase();
 }
+/* Network-wide search is STRICTER than in-sector search (2026-08-16).
+   In a sector you're scanning a small, known list, so a loose substring match is helpful.
+   Across all 6,700+ gateways it is not: searching "rose" in Home otherwise drags in
+   ProseccoXX and AndrosexualXX alongside RoseXX. So the network tier requires the query to
+   start the gateway name or start a whole comma-separated tag term — "rose" matches RoseXX
+   and the tag "rose gold", but not "prosecco". */
+/* Relevance rank for a query, shared by Discover and the drawer's network tier.
+   Returns -1 for no match, else 0 = the name IS the query, 1 = the name starts with it,
+   2 = a whole tag term starts with it. Deliberately NOT a substring test: "art" would
+   otherwise match "he-art" and bury ArtXX under 290 cardiac conditions. */
+function gwRank(name, q){
+  const key=gwKeyFromName(name);
+  if(key===q) return 0;
+  if(key.startsWith(q)) return 1;
+  const tags=(typeof GW_TAGS!=='undefined' && GW_TAGS[key]) ? GW_TAGS[key].toLowerCase() : '';
+  return tags.split(',').some(t=>t.trim().startsWith(q)) ? 2 : -1;
+}
+function gwMatchesWide(name, q){ return gwRank(name,q) >= 0; }
+/* Every OTHER sector a query hits → [{name, sectors:[key,…]}], nearest-first by tile order.
+   Deliberately excludes anything already shown in the active sector's own results, so the
+   local list is never diluted — this is a second tier, not a merged one. */
+function gwFindElsewhere(q, sk, exclude){
+  const hits=new Map();
+  for(const k in SECTOR_GATEWAYS){
+    if(k===sk) continue;
+    for(const n of SECTOR_GATEWAYS[k]){
+      if(isGwHeader(n) || exclude.has(n.toLowerCase()) || !gwMatchesWide(n,q)) continue;
+      if(!hits.has(n)) hits.set(n,[]);
+      hits.get(n).push(k);
+    }
+  }
+  return [...hits].map(([name,sectors])=>({name,sectors}))
+    .sort((a,b)=>(gwIsLive(b.name)?1:0)-(gwIsLive(a.name)?1:0) || a.name.localeCompare(b.name));
+}
 function buildDrawerR(){
   const sk=activeSectorKey();
   // The right drawer is ALWAYS the sector's gateways (the "family" list) — same on home,
@@ -2076,11 +2113,33 @@ function buildDrawerR(){
       <div style="flex:1"><div class="dnm" style="${on?`color:${accent};`:''}">${name}<span style="opacity:.4;font-weight:600">.com</span></div></div>
       <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">${real?LIVE_DOT:''}${rowStar(key)}</div>
     </div>`;};
+  // A hit from another sector: same shape as a normal row, but wearing THAT sector's colour
+  // and captioned with the tile(s) it lives in, so it's obvious why it surfaced.
+  const gwWideRow = (name, sks) => {
+    const key=gwKeyFromName(name); const real=GATEWAYS[key];
+    const home=sectorOf(sks[0]);
+    const label=sks.map(k=>sectorOf(k).name).join(' · ');
+    return `<div class="drow drow-wide" onclick="pickGateway('${name}','${sks[0]}')">
+      <div class="dic" style="background:${real?real.gradient:home.g}">${real?real.emoji:home.icon}</div>
+      <div style="flex:1;min-width:0"><div class="dnm">${name}<span style="opacity:.4;font-weight:600">.com</span></div>
+        <div class="dwhere">${label}</div></div>
+      <div style="display:flex;align-items:center;gap:5px;flex-shrink:0">${real?LIVE_DOT:''}${rowStar(key)}</div>
+    </div>`;};
   let out;
   if(q){
     // Searching → flatten across sub-groups, drop dividers, live first. Matches name + tags.
-    out = names.filter(n=>!isGwHeader(n)).filter(n=>gwSearchText(n).includes(q))
-      .sort((a,b)=>(gwIsLive(b)?1:0)-(gwIsLive(a)?1:0)).map(gwRow).join('');
+    const local = names.filter(n=>!isGwHeader(n)).filter(n=>gwSearchText(n).includes(q))
+      .sort((a,b)=>(gwIsLive(b)?1:0)-(gwIsLive(a)?1:0));
+    out = local.map(gwRow).join('');
+    // Second tier: the same query across every other sector. A gateway can legitimately live
+    // in several tiles (CardiologyXX is in Health AND Education), and a related one often sits
+    // in a neighbouring tile entirely — without this, searching "cardiology" from Sports finds
+    // nothing at all. Kept visually separate and clearly attributed.
+    const elsewhere = gwFindElsewhere(q, sk, new Set(local.map(n=>n.toLowerCase())));
+    if(elsewhere.length){
+      out += `<div class="gwsec gwsec-wide">Elsewhere in the network · ${elsewhere.length}</div>`
+           + elsewhere.map(h=>gwWideRow(h.name,h.sectors)).join('');
+    }
   } else if(hasGwGroups(sk)){
     // Grouped sector — file order; sticky sub-group dividers double as jump anchors (id=gwsec-N).
     let gi=-1;
@@ -4878,7 +4937,7 @@ function receiptSheetHtml(){
    Three states: (1) typing → flat tag-aware gateway search across every sector;
    (2) a sector picked → that sector's gateways (grouped/flat); (3) at rest → sector
    cards grouped by the three sub-sections. gwSearchText() folds in the search_tags. */
-function renderDiscover(){
+function renderDiscover(bodyOnly){
   const q = state.discoverQ.toLowerCase().trim();
   const gwrow = (name, sk) => {                    // one gateway row (search + drill-down share it)
     const real = GATEWAYS[gwKeyFromName(name)];
@@ -4892,9 +4951,14 @@ function renderDiscover(){
   };
   const searchbox = `<div class="searchbox">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(17,17,22,.4)" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-      <input placeholder="Search gateways, brands, anything…" value="${esc(state.discoverQ)}" oninput="state.discoverQ=this.value;render();this.focus();this.setSelectionRange(this.value.length,this.value.length)">
+      <input id="discoverSearch" placeholder="Search gateways, brands, anything…" value="${esc(state.discoverQ)}" oninput="onDiscoverSearch(this.value)">
     </div>`;
-  const shell = inner => `${topBar()}<div class="push">${searchbox}${inner}<div style="height:14px"></div></div>`;
+  // The search input is STATIC DOM — only #discoverBody is rewritten while typing, so the
+  // field keeps focus and the caret. (Re-rendering the whole screen destroyed the input on
+  // every keystroke, which is why the cursor kept dropping out. Same fix as the drawer's
+  // onSecSearch/onGwSearch.)
+  const _out = inner => bodyOnly ? inner : shell(inner);
+  const shell = inner => `${topBar()}<div class="push">${searchbox}<div id="discoverBody">${inner}</div><div style="height:14px"></div></div>`;
 
   // ── STATE 1: SEARCH — flatten every sector, tag-aware, deduped, live-first ──
   if(q){
@@ -4904,19 +4968,24 @@ function renderDiscover(){
       (SECTOR_GATEWAYS[sk]||[]).forEach(n=>{
         if(isGwHeader(n)) return;
         const k=gwKeyFromName(n); if(seen.has(k)) return;
-        if(gwSearchText(n).toLowerCase().includes(q)){ seen.add(k); hits.push({n,sk}); }
+        const r=gwRank(n,q); if(r<0) return;
+        seen.add(k); hits.push({n,sk,r});
       });
     });
-    hits.sort((a,b)=>(gwIsLive(b.n)?1:0)-(gwIsLive(a.n)?1:0));
+    // Relevance first (exact → name-prefix → tag-prefix), then live, then A–Z. Before this,
+    // Discover matched on a raw substring and sorted only live-first: "art" returned 296 rows
+    // led by AnemiaXX/AneurysmXX (all carrying a "heart" tag) with ArtXX nowhere in sight.
+    hits.sort((a,b)=> a.r-b.r || (gwIsLive(b.n)?1:0)-(gwIsLive(a.n)?1:0) || a.n.localeCompare(b.n));
+    const count = hits.length ? `<div class="gwsec gwsec-wide">${hits.length} ${hits.length===1?'result':'results'}</div>` : '';
     const rows = hits.map(h=>gwrow(h.n,h.sk)).join('')
       || `<div class="empty">No gateways match “${esc(state.discoverQ)}”</div>`;
-    return shell(`<div style="height:8px"></div>${rows}`);
+    return _out(`${count}${rows}`);
   }
 
   // ── STATE 2: DRILL-DOWN — one sector's gateways ──
   if(state.discoverSector){
     const sk=state.discoverSector, s=sectorOf(sk);
-    if(!s){ state.discoverSector=null; return renderDiscover(); }
+    if(!s){ state.discoverSector=null; return renderDiscover(bodyOnly); }
     let rows=''; const raw=SECTOR_GATEWAYS[sk]||[];
     if(hasGwGroups(sk)){
       raw.forEach(n=> rows += isGwHeader(n) ? gwGroupDivider(n.slice(1),'discover') : gwrow(n,sk));
@@ -4928,7 +4997,7 @@ function renderDiscover(){
       <div class="dischead"><div class="ic" style="background:${s.g}">${s.icon}</div>
         <div><div class="nm" style="font-size:15px;font-weight:800">${s.name}</div>
           <div class="dm">${gwCount(sk)} gateways${sectorIsLive(sk)?' · LIVE':''}</div></div></div>`;
-    return shell(head + rows);
+    return _out(head + rows);
   }
 
   // ── STATE 3: REST — sector cards grouped by sub-section ──
@@ -4950,7 +5019,18 @@ function renderDiscover(){
         }).join('')
       + `</div>`;
   }
-  return shell(gchips + body);
+  return _out(gchips + body);
+}
+
+/* Discover search — mirrors onGwSearch: state + a targeted redraw, never a full render().
+   The input is outside #discoverBody, so it is never replaced and focus is retained. */
+function onDiscoverSearch(v){
+  state.discoverQ = v;
+  state.discoverSector = null;            // typing always returns to the flat result list
+  const el = $('discoverBody');
+  if(el) el.innerHTML = renderDiscover(true);
+  else render();                          // defensive: body missing → fall back to a full draw
+  const sc = $('screen'); if(sc) sc.scrollTo(0,0);
 }
 
 /* ═════════ FEED TAB — same Network surface as Home, opened on the Feed view.
